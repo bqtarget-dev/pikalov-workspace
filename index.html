@@ -59,10 +59,11 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .progress-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px}
 
 /* Stats */
-.proj-stats{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;padding:10px 20px}
+.proj-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:10px 20px}
 .ps{background:var(--bg4);border-radius:7px;padding:8px 6px;text-align:center}
 .ps-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);margin-bottom:3px}
 .ps-val{font-size:11px;font-weight:500}
+.ps.accent{background:rgba(127,110,245,.13);border:.5px solid rgba(127,110,245,.28)}
 
 /* Instruments */
 .inst-section{border-top:.5px solid var(--border)}
@@ -201,6 +202,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
       <div class="field">
         <label>ID кампании VK</label>
         <input type="text" id="p-vkid" placeholder="123456789" />
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">Используется для автоподтяжки данных из VK Ads</div>
       </div>
       <div class="field">
         <label>Статус</label>
@@ -231,7 +233,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
         </div>
       </div>
       <div class="field">
-        <label>НДС, %</label>
+        <label>Наша комиссия, %</label>
         <input type="number" id="p-vat" placeholder="0" min="0" max="100" />
       </div>
     </div>
@@ -313,7 +315,10 @@ function calc(p) {
   var plan = p.instruments.reduce(function(s,i){ return s+i.plan; }, 0);
   var fact = p.instruments.reduce(function(s,i){ return s+i.fact; }, 0);
   var comm = p.commission ? p.budgetLimit * 0.10 * (1 + (p.vat||0)/100) : 0;
-  return { plan:plan, fact:fact, remaining:p.budgetLimit-fact, debt:p.budgetLimit-p.received, commission:comm };
+  var agencyComm = p.commission ? p.received * 0.10 : 0;
+  var ourComm = p.received * (p.vat||0) / 100;
+  var adBudget = p.received - agencyComm - ourComm;
+  return { plan:plan, fact:fact, remaining:p.budgetLimit-fact, debt:p.budgetLimit-p.received, commission:comm, adBudget:adBudget };
 }
 
 function fmt(n) { return Number(n||0).toLocaleString('ru')+' ₽'; }
@@ -353,7 +358,7 @@ function renderSummary() {
     sc('Проектов', ps.length, '') +
     sc('Лимит всего', fmt(t.lim), '') +
     sc('Получено', fmt(t.rec), 'cg') +
-    sc('Потрачено', fmt(t.fact), 'cp') +
+    sc('Итого факт', fmt(t.fact), 'cp') +
     sc('Остаток', fmt(t.rem), 'ca') +
     sc('Долг клиентов', fmt(t.debt), 'cr');
 }
@@ -367,7 +372,7 @@ function renderProjects() {
 
 function projCard(p) {
   var c = calc(p);
-  var pct = p.budgetLimit > 0 ? Math.min(c.fact/p.budgetLimit*100, 999) : 0;
+  var pct = c.adBudget > 0 ? Math.min(c.fact/c.adBudget*100, 999) : 0;
   var fill = pct < 80 ? 'var(--green)' : pct < 100 ? 'var(--amber)' : 'var(--red)';
   var spClass = {active:'sp-active',done:'sp-done',pause:'sp-pause'}[p.status];
   var spLabel = {active:'В работе',done:'Завершён',pause:'Пауза'}[p.status];
@@ -378,7 +383,7 @@ function projCard(p) {
       '<div class="proj-meta">' +
         '<span class="badge">'+esc(p.clientType)+'</span>' +
         (p.vkCampaignId ? '<span class="vk-id-badge">VK '+esc(p.vkCampaignId)+'</span>' : '') +
-        (p.commission ? '<span class="badge">Комиссия 10%'+(p.vat?' + НДС '+p.vat+'%':'')+'</span>' : '') +
+        (p.commission ? '<span class="badge">Комиссия 10%'+(p.vat?' + Наша комиссия '+p.vat+'%':'')+'</span>' : '') +
         '<span class="badge" style="color:var(--text3)">'+fmtD(p.createdAt)+'</span>' +
       '</div>' +
     '</div>' +
@@ -387,7 +392,7 @@ function projCard(p) {
 
   var progress = '<div class="proj-progress">' +
     '<div class="progress-track"><div class="progress-fill" style="width:'+Math.min(pct,100)+'%;background:'+fill+'"></div></div>' +
-    '<div class="progress-labels"><span>'+pct.toFixed(1)+'% потрачено</span><span>'+fmt(c.fact)+' / '+fmt(p.budgetLimit)+'</span></div>' +
+    '<div class="progress-labels"><span>'+pct.toFixed(1)+'% факт</span><span>'+fmt(c.fact)+' / '+fmt(c.adBudget)+'</span></div>' +
   '</div>';
 
   var stats = '<div class="proj-stats" id="pstats-'+p.id+'">' + statsHtml(p, c) + '</div>';
@@ -406,7 +411,8 @@ function statsHtml(p, c) {
     ps('Итого факт', fmt(c.fact), 'cp') +
     ps('Остаток', fmt(c.remaining), c.remaining < 0 ? 'cr' : 'ca') +
     ps('Долг', fmt(c.debt), c.debt <= 0 ? 'cg' : 'cr') +
-    (p.commission ? ps('Комиссия', fmt(c.commission), 'ca') : ps('Комиссия', '—', ''));
+    (p.commission ? ps('Комиссия', fmt(c.commission), 'ca') : ps('Комиссия', '—', '')) +
+    '<div class="ps accent"><div class="ps-lbl">К расходу</div><div class="ps-val">'+fmt(c.adBudget)+'</div></div>';
 }
 function ps(l,v,cls){ return '<div class="ps"><div class="ps-lbl">'+l+'</div><div class="ps-val '+cls+'">'+v+'</div></div>'; }
 
