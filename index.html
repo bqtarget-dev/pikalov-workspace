@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIKALOV MEDIA — Workspace</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0c;--bg2:#111116;--bg3:#18181f;--bg4:#1f1f28;--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);--accent:#7f6ef5;--accent2:#a99ef8;--green:#3ecf8e;--amber:#f5a623;--red:#f55656;--text:rgba(255,255,255,.92);--text2:rgba(255,255,255,.45);--text3:rgba(255,255,255,.22);}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:.5px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:8px}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.12em}
+.logo em{color:var(--accent);font-style:normal}
+.logo-tag{font-size:10px;color:var(--text3);letter-spacing:.08em;margin-left:8px;font-family:'DM Sans',sans-serif;vertical-align:middle}
+.nav-tabs{display:flex;gap:4px}
+.ntab{padding:7px 13px;border-radius:8px;border:.5px solid transparent;background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.ntab.active{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.ntab.soon{cursor:default;opacity:.35}
+
+/* MAIN */
+.main{max-width:980px;margin:0 auto;padding:24px}
+
+/* Summary */
+.summary-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:20px}
+.s-card{background:var(--bg2);border:.5px solid var(--border);border-radius:10px;padding:12px 14px}
+.s-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:5px}
+.s-val{font-size:17px;font-weight:500}
+.cg{color:var(--green)}.cp{color:var(--accent2)}.ca{color:var(--amber)}.cr{color:var(--red)}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.ftabs{display:flex;gap:4px}
+.ftab{padding:6px 12px;border-radius:7px;border:.5px solid var(--border);background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .15s}
+.ftab.active{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.add-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.add-btn:hover{opacity:.85}
+
+/* Project card */
+.proj-card{background:var(--bg2);border:.5px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden;transition:border-color .2s}
+.proj-card:hover{border-color:var(--border2)}
+
+.proj-head{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 20px 0;gap:12px}
+.proj-title{font-size:15px;font-weight:500}
+.proj-meta{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;align-items:center}
+.badge{font-size:10px;padding:2px 9px;border-radius:20px;border:.5px solid var(--border2);color:var(--text2);background:var(--bg4)}
+.vk-id-badge{font-size:10px;color:var(--text3);font-family:monospace}
+.status-pill{font-size:10px;padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.sp-active{background:rgba(62,207,142,.1);color:var(--green);border:.5px solid rgba(62,207,142,.25)}
+.sp-done{background:rgba(255,255,255,.03);color:var(--text3);border:.5px solid var(--border)}
+.sp-pause{background:rgba(245,166,35,.08);color:var(--amber);border:.5px solid rgba(245,166,35,.25)}
+
+/* Progress */
+.proj-progress{padding:12px 20px 0}
+.progress-track{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;transition:width .3s}
+.progress-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px}
+
+/* Stats */
+.proj-stats{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;padding:10px 20px}
+.ps{background:var(--bg4);border-radius:7px;padding:8px 6px;text-align:center}
+.ps-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);margin-bottom:3px}
+.ps-val{font-size:11px;font-weight:500}
+
+/* Instruments */
+.inst-section{border-top:.5px solid var(--border)}
+.inst-toggle{display:flex;align-items:center;gap:6px;padding:9px 20px;font-size:11px;color:var(--text2);cursor:pointer;user-select:none;transition:color .15s}
+.inst-toggle:hover{color:var(--text)}
+.inst-body{display:none;padding:0 20px 14px}
+.inst-body.open{display:block}
+.inst-table{width:100%;border-collapse:collapse}
+.inst-table th{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);padding:5px 6px;font-weight:400;text-align:left}
+.inst-table th:not(:first-child){text-align:right}
+.inst-table td{padding:3px 6px;border-top:.5px solid var(--border)}
+.i-name{font-size:12px;color:var(--text2)}
+.i-inp{background:var(--bg3);border:.5px solid var(--border2);border-radius:5px;padding:4px 7px;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;width:96px;text-align:right;outline:none;transition:border-color .15s}
+.i-inp:focus{border-color:var(--accent)}
+.i-diff{font-size:11px;text-align:right;width:90px}
+.inst-foot td{font-size:11px;font-weight:500;padding:6px 6px;border-top:.5px solid var(--border2);text-align:right}
+.inst-foot td:first-child{text-align:left;color:var(--text2)}
+.add-i-btn{font-size:11px;color:var(--accent2);background:transparent;border:.5px solid rgba(127,110,245,.3);border-radius:6px;padding:4px 12px;cursor:pointer;margin-top:8px;transition:all .15s}
+.add-i-btn:hover{background:rgba(127,110,245,.1)}
+
+/* Transfers */
+.transfers-section{padding:8px 20px 2px;border-top:.5px solid var(--border)}
+.tr-head{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:5px}
+.tr-row{display:flex;gap:8px;align-items:center;font-size:11px;padding:3px 0;flex-wrap:wrap}
+.tr-date{color:var(--text3);width:68px;flex-shrink:0}
+.tr-amount{font-weight:500;width:100px;flex-shrink:0}
+.tr-desc{color:var(--text2)}
+
+/* Actions */
+.proj-actions{display:flex;gap:7px;padding:10px 20px 14px;flex-wrap:wrap;border-top:.5px solid var(--border)}
+.act{font-size:11px;border-radius:6px;padding:5px 11px;cursor:pointer;border:.5px solid;font-family:'DM Sans',sans-serif;transition:all .15s}
+.a-edit{color:var(--text2);border-color:var(--border2);background:transparent}.a-edit:hover{color:var(--text);border-color:var(--border)}
+.a-transfer{color:var(--accent2);border-color:rgba(127,110,245,.3);background:rgba(127,110,245,.07)}.a-transfer:hover{background:rgba(127,110,245,.15)}
+.a-ok{color:var(--green);border-color:rgba(62,207,142,.3);background:rgba(62,207,142,.05)}.a-ok:hover{background:rgba(62,207,142,.12)}
+.a-pause{color:var(--amber);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.05)}.a-pause:hover{background:rgba(245,166,35,.12)}
+.a-del{color:var(--red);border-color:rgba(245,86,86,.2);background:transparent}.a-del:hover{background:rgba(245,86,86,.07)}
+
+/* Empty */
+.empty{text-align:center;padding:48px;color:var(--text3);font-size:13px}
+.coming-soon{text-align:center;padding:80px 20px;color:var(--text3)}
+.cs-icon{font-size:36px;margin-bottom:12px}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:.5px solid var(--border2);border-radius:16px;padding:28px;width:100%;max-width:560px;margin:auto}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.06em;margin-bottom:18px}
+.msection{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin:18px 0 10px;border-top:.5px solid var(--border);padding-top:14px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:10px;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.field input,.field select{width:100%;background:var(--bg4);border:.5px solid var(--border2);border-radius:8px;padding:9px 12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field select option{background:#1f1f28}
+.field input:disabled{opacity:.5;cursor:default}
+.mrow{display:flex;gap:10px}
+.mrow .field{flex:1}
+.check-row{display:flex;align-items:center;gap:8px;padding:8px 0}
+.check-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.check-row label{font-size:13px;color:var(--text);cursor:pointer}
+
+/* Modal instruments */
+.mi-table{width:100%;border-collapse:collapse;margin-bottom:8px}
+.mi-table th{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);padding:5px 6px;font-weight:400;text-align:left}
+.mi-table th:not(:first-child){text-align:right}
+.mi-table td{padding:3px 6px;border-top:.5px solid var(--border)}
+.mi-name-inp{background:transparent;border:none;color:var(--text2);font-size:12px;width:170px;outline:none;font-family:'DM Sans',sans-serif;padding:2px 0}
+.mi-name-inp:focus{color:var(--text);border-bottom:.5px solid var(--border2)}
+.mi-num-inp{background:var(--bg4);border:.5px solid var(--border2);border-radius:5px;padding:4px 7px;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;width:90px;text-align:right;outline:none}
+.mi-num-inp:focus{border-color:var(--accent)}
+.mi-del{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:2px 4px;transition:color .15s}
+.mi-del:hover{color:var(--red)}
+
+.modal-actions{display:flex;gap:10px;margin-top:20px}
+.mbtn{flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer}
+.mcancel{background:transparent;color:var(--text2);border:.5px solid var(--border2);border-radius:8px;padding:10px 18px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
+.mcancel:hover{color:var(--text)}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div>
+    <span class="logo">PIKALOV <em>MEDIA</em></span>
+    <span class="logo-tag">WORKSPACE</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="ntab active" onclick="showTab('mediaplans')">💰 Медиапланы</button>
+    <button class="ntab soon" title="Скоро">👥 Команда</button>
+    <button class="ntab soon" title="Скоро">✅ Задачи</button>
+    <button class="ntab soon" title="Скоро">🍅 Помидоро</button>
+  </div>
+</div>
+
+<div class="main">
+  <div id="view-mediaplans">
+    <div class="summary-bar" id="summary-bar"></div>
+    <div class="toolbar">
+      <div class="ftabs">
+        <button class="ftab active" id="f-all"    onclick="setFilter('all')">Все</button>
+        <button class="ftab"        id="f-active" onclick="setFilter('active')">В работе</button>
+        <button class="ftab"        id="f-pause"  onclick="setFilter('pause')">Пауза</button>
+        <button class="ftab"        id="f-done"   onclick="setFilter('done')">Завершены</button>
+      </div>
+      <button class="add-btn" onclick="openProjModal()">+ Новый проект</button>
+    </div>
+    <div id="projects-list"></div>
+  </div>
+
+  <div id="view-team"    style="display:none"><div class="coming-soon"><div class="cs-icon">👥</div><div>Раздел «Команда» — скоро</div></div></div>
+  <div id="view-tasks"   style="display:none"><div class="coming-soon"><div class="cs-icon">✅</div><div>Раздел «Задачи» — скоро</div></div></div>
+  <div id="view-pomodoro"style="display:none"><div class="coming-soon"><div class="cs-icon">🍅</div><div>Раздел «Помидоро» — скоро</div></div></div>
+</div>
+
+<!-- Modal: Project create / edit -->
+<div class="overlay" id="modal-project">
+  <div class="modal">
+    <div class="modal-title" id="modal-proj-title">Новый проект</div>
+
+    <div class="msection" style="border-top:none;padding-top:0;margin-top:0">Основная информация</div>
+    <div class="mrow">
+      <div class="field" style="flex:2">
+        <label>Название проекта / Артист</label>
+        <input type="text" id="p-name" placeholder="Saluki — релиз" />
+      </div>
+      <div class="field">
+        <label>Тип клиента</label>
+        <select id="p-type">
+          <option value="артист">Артист</option>
+          <option value="лейбл">Лейбл</option>
+          <option value="агентство">Агентство</option>
+          <option value="свой">Свой</option>
+        </select>
+      </div>
+    </div>
+    <div class="mrow">
+      <div class="field">
+        <label>ID кампании VK</label>
+        <input type="text" id="p-vkid" placeholder="123456789" />
+      </div>
+      <div class="field">
+        <label>Статус</label>
+        <select id="p-status">
+          <option value="active">В работе</option>
+          <option value="pause">Пауза</option>
+          <option value="done">Завершён</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="msection">Бюджет</div>
+    <div class="mrow">
+      <div class="field">
+        <label>Бюджет лимит, ₽</label>
+        <input type="number" id="p-limit" placeholder="0" min="0" />
+      </div>
+      <div class="field">
+        <label>Получено от клиента, ₽</label>
+        <input type="number" id="p-received" placeholder="0" min="0" />
+      </div>
+    </div>
+    <div class="mrow">
+      <div class="field">
+        <div class="check-row">
+          <input type="checkbox" id="p-commission" />
+          <label for="p-commission">Комиссия агентства 10%</label>
+        </div>
+      </div>
+      <div class="field">
+        <label>НДС, %</label>
+        <input type="number" id="p-vat" placeholder="0" min="0" max="100" />
+      </div>
+    </div>
+
+    <div class="msection">Инструменты рекламы</div>
+    <table class="mi-table">
+      <thead><tr><th>Инструмент</th><th style="text-align:right">План, ₽</th><th style="text-align:right">Факт, ₽</th><th></th></tr></thead>
+      <tbody id="mi-body"></tbody>
+    </table>
+    <button class="add-i-btn" onclick="addModalInst()">+ Добавить своё</button>
+
+    <div class="modal-actions">
+      <button class="mcancel" onclick="closeProjModal()">Отмена</button>
+      <button class="mbtn" onclick="saveProject()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Transfer -->
+<div class="overlay" id="modal-transfer">
+  <div class="modal">
+    <div class="modal-title">Перенос остатка</div>
+    <div class="mrow">
+      <div class="field">
+        <label>Источник</label>
+        <input type="text" id="tr-from-name" disabled />
+      </div>
+      <div class="field">
+        <label>Доступный остаток</label>
+        <input type="text" id="tr-from-bal" disabled />
+      </div>
+    </div>
+    <div class="field">
+      <label>Целевой проект</label>
+      <select id="tr-to"></select>
+    </div>
+    <div class="field">
+      <label>Сумма переноса, ₽</label>
+      <input type="number" id="tr-amount" placeholder="0" min="1" />
+    </div>
+    <div class="field">
+      <label>Комментарий</label>
+      <input type="text" id="tr-comment" placeholder="Причина переноса" />
+    </div>
+    <div class="modal-actions">
+      <button class="mcancel" onclick="closeTransferModal()">Отмена</button>
+      <button class="mbtn" onclick="doTransfer()">Перенести</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var DEFAULT_INST_NAMES = [
+  'ВК таргет','YouTube','TikTok',
+  'Посевы ВК группы','Посевы ВК плейлисты',
+  'Посевы Spotify','Посевы ЯМ',
+  'Шаблоны TikTok','Блогеры TikTok','Яндекс Директ'
+];
+
+var state = { projects: [], filter: 'all' };
+var currentTab = 'mediaplans';
+var editingId = null;
+var transferFromId = null;
+var modalInsts = [];
+
+// DATA
+function loadData() {
+  try { var d = localStorage.getItem('pm_ws_v1'); if (d) state.projects = JSON.parse(d); } catch(e) {}
+}
+function saveData() { localStorage.setItem('pm_ws_v1', JSON.stringify(state.projects)); }
+
+function makeInsts() {
+  return DEFAULT_INST_NAMES.map(function(name, i) {
+    return { id: 'di' + i, name: name, plan: 0, fact: 0 };
+  });
+}
+
+function calc(p) {
+  var plan = p.instruments.reduce(function(s,i){ return s+i.plan; }, 0);
+  var fact = p.instruments.reduce(function(s,i){ return s+i.fact; }, 0);
+  var comm = p.commission ? p.budgetLimit * 0.10 * (1 + (p.vat||0)/100) : 0;
+  return { plan:plan, fact:fact, remaining:p.budgetLimit-fact, debt:p.budgetLimit-p.received, commission:comm };
+}
+
+function fmt(n) { return Number(n||0).toLocaleString('ru')+' ₽'; }
+function fmtD(iso) { return new Date(iso).toLocaleDateString('ru',{day:'2-digit',month:'2-digit',year:'2-digit'}); }
+
+// TABS
+function showTab(t) {
+  currentTab = t;
+  ['mediaplans','team','tasks','pomodoro'].forEach(function(k) {
+    document.getElementById('view-'+k).style.display = k===t ? '' : 'none';
+  });
+  document.querySelectorAll('.ntab:not(.soon)').forEach(function(b,i) {
+    b.classList.toggle('active', i === ['mediaplans','team','tasks','pomodoro'].indexOf(t));
+  });
+}
+
+// FILTER
+function setFilter(f) {
+  state.filter = f;
+  ['all','active','pause','done'].forEach(function(k) {
+    document.getElementById('f-'+k).classList.toggle('active', k===f);
+  });
+  renderProjects();
+  renderSummary();
+}
+
+// RENDER
+function render() { renderSummary(); renderProjects(); }
+
+function renderSummary() {
+  var ps = state.projects;
+  var t = ps.reduce(function(a,p) {
+    var c = calc(p);
+    return {lim:a.lim+p.budgetLimit, rec:a.rec+p.received, plan:a.plan+c.plan, fact:a.fact+c.fact, rem:a.rem+c.remaining, debt:a.debt+c.debt};
+  }, {lim:0,rec:0,plan:0,fact:0,rem:0,debt:0});
+  document.getElementById('summary-bar').innerHTML =
+    sc('Проектов', ps.length, '') +
+    sc('Лимит всего', fmt(t.lim), '') +
+    sc('Получено', fmt(t.rec), 'cg') +
+    sc('Потрачено', fmt(t.fact), 'cp') +
+    sc('Остаток', fmt(t.rem), 'ca') +
+    sc('Долг клиентов', fmt(t.debt), 'cr');
+}
+function sc(l,v,cls){ return '<div class="s-card"><div class="s-lbl">'+l+'</div><div class="s-val '+cls+'">'+v+'</div></div>'; }
+
+function renderProjects() {
+  var list = state.filter === 'all' ? state.projects : state.projects.filter(function(p){ return p.status===state.filter; });
+  var el = document.getElementById('projects-list');
+  el.innerHTML = list.length ? list.map(projCard).join('') : '<div class="empty">Проектов нет — создай первый выше</div>';
+}
+
+function projCard(p) {
+  var c = calc(p);
+  var pct = p.budgetLimit > 0 ? Math.min(c.fact/p.budgetLimit*100, 999) : 0;
+  var fill = pct < 80 ? 'var(--green)' : pct < 100 ? 'var(--amber)' : 'var(--red)';
+  var spClass = {active:'sp-active',done:'sp-done',pause:'sp-pause'}[p.status];
+  var spLabel = {active:'В работе',done:'Завершён',pause:'Пауза'}[p.status];
+
+  var head = '<div class="proj-head">' +
+    '<div>' +
+      '<div class="proj-title">'+esc(p.name)+'</div>' +
+      '<div class="proj-meta">' +
+        '<span class="badge">'+esc(p.clientType)+'</span>' +
+        (p.vkCampaignId ? '<span class="vk-id-badge">VK '+esc(p.vkCampaignId)+'</span>' : '') +
+        (p.commission ? '<span class="badge">Комиссия 10%'+(p.vat?' + НДС '+p.vat+'%':'')+'</span>' : '') +
+        '<span class="badge" style="color:var(--text3)">'+fmtD(p.createdAt)+'</span>' +
+      '</div>' +
+    '</div>' +
+    '<span class="status-pill '+spClass+'">'+spLabel+'</span>' +
+  '</div>';
+
+  var progress = '<div class="proj-progress">' +
+    '<div class="progress-track"><div class="progress-fill" style="width:'+Math.min(pct,100)+'%;background:'+fill+'"></div></div>' +
+    '<div class="progress-labels"><span>'+pct.toFixed(1)+'% потрачено</span><span>'+fmt(c.fact)+' / '+fmt(p.budgetLimit)+'</span></div>' +
+  '</div>';
+
+  var stats = '<div class="proj-stats" id="pstats-'+p.id+'">' + statsHtml(p, c) + '</div>';
+
+  var instruments = instSection(p);
+  var transfers = transfersSection(p);
+  var actions = actionsHtml(p, c);
+
+  return '<div class="proj-card" id="pc-'+p.id+'">'+head+progress+stats+instruments+transfers+actions+'</div>';
+}
+
+function statsHtml(p, c) {
+  return ps('Лимит', fmt(p.budgetLimit), '') +
+    ps('Получено', fmt(p.received), 'cg') +
+    ps('Итого план', fmt(c.plan), 'cp') +
+    ps('Итого факт', fmt(c.fact), 'cp') +
+    ps('Остаток', fmt(c.remaining), c.remaining < 0 ? 'cr' : 'ca') +
+    ps('Долг', fmt(c.debt), c.debt <= 0 ? 'cg' : 'cr') +
+    (p.commission ? ps('Комиссия', fmt(c.commission), 'ca') : ps('Комиссия', '—', ''));
+}
+function ps(l,v,cls){ return '<div class="ps"><div class="ps-lbl">'+l+'</div><div class="ps-val '+cls+'">'+v+'</div></div>'; }
+
+function instSection(p) {
+  var rows = p.instruments.map(function(inst) {
+    var diff = inst.plan - inst.fact;
+    var diffHtml = (inst.plan||inst.fact)
+      ? '<span style="color:'+(diff>=0?'var(--green)':'var(--red)')+'">'+fmt(diff)+'</span>'
+      : '<span style="color:var(--text3)">—</span>';
+    return '<tr>' +
+      '<td class="i-name">'+esc(inst.name)+'</td>' +
+      '<td style="text-align:right"><input class="i-inp" type="number" value="'+inst.plan+'" data-pid="'+p.id+'" data-iid="'+inst.id+'" data-f="plan" min="0"/></td>' +
+      '<td style="text-align:right"><input class="i-inp" type="number" value="'+inst.fact+'" data-pid="'+p.id+'" data-iid="'+inst.id+'" data-f="fact" min="0"/></td>' +
+      '<td class="i-diff">'+diffHtml+'</td>' +
+    '</tr>';
+  }).join('');
+  var tp = p.instruments.reduce(function(s,i){return s+i.plan;},0);
+  var tf = p.instruments.reduce(function(s,i){return s+i.fact;},0);
+
+  return '<div class="inst-section">' +
+    '<div class="inst-toggle" onclick="toggleInst(\''+p.id+'\')"><span id="ia-'+p.id+'">▸</span> Инструменты ('+p.instruments.length+')</div>' +
+    '<div class="inst-body" id="ib-'+p.id+'">' +
+      '<table class="inst-table">' +
+        '<thead><tr><th>Инструмент</th><th style="text-align:right">План</th><th style="text-align:right">Факт</th><th style="text-align:right">Разница</th></tr></thead>' +
+        '<tbody>'+rows+'</tbody>' +
+        '<tfoot><tr class="inst-foot"><td>Итого</td><td style="color:var(--accent2)">'+fmt(tp)+'</td><td style="color:var(--accent2)">'+fmt(tf)+'</td><td></td></tr></tfoot>' +
+      '</table>' +
+      '<button class="add-i-btn" onclick="addInstInline(\''+p.id+'\')">+ Добавить инструмент</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function transfersSection(p) {
+  if (!p.transfers || !p.transfers.length) return '';
+  var rows = p.transfers.map(function(t) {
+    var clr = t.direction === 'in' ? 'var(--green)' : 'var(--amber)';
+    return '<div class="tr-row"><span class="tr-date">'+fmtD(t.date)+'</span><span class="tr-amount" style="color:'+clr+'">'+fmt(t.amount)+'</span><span class="tr-desc">'+esc(t.description)+'</span></div>';
+  }).join('');
+  return '<div class="transfers-section"><div class="tr-head">История переносов</div>'+rows+'</div>';
+}
+
+function actionsHtml(p, c) {
+  var toggleLabel = p.status === 'active' ? '⏸ Пауза' : (p.status === 'pause' ? '▶ Возобновить' : '↺ Возобновить');
+  var toggleStatus = p.status === 'active' ? 'pause' : 'active';
+  return '<div class="proj-actions">' +
+    '<button class="act a-edit" onclick="openProjModal(\''+p.id+'\')">✎ Редактировать</button>' +
+    '<button class="act a-transfer" onclick="openTransferModal(\''+p.id+'\')">⇄ Перенести остаток</button>' +
+    (p.status !== 'done' ? '<button class="act a-ok" onclick="setStatus(\''+p.id+'\',\'done\')">✓ Завершить</button>' : '') +
+    '<button class="act a-pause" onclick="setStatus(\''+p.id+'\',\''+toggleStatus+'\')">'+toggleLabel+'</button>' +
+    '<button class="act a-del" onclick="deleteProj(\''+p.id+'\')">Удалить</button>' +
+  '</div>';
+}
+
+function toggleInst(id) {
+  var b = document.getElementById('ib-'+id), a = document.getElementById('ia-'+id);
+  var open = b.classList.toggle('open');
+  a.textContent = open ? '▾' : '▸';
+}
+
+// INLINE INSTRUMENT EDITING — event delegation
+document.addEventListener('change', function(e) {
+  var el = e.target;
+  if (!el.classList.contains('i-inp')) return;
+  var pid = el.dataset.pid, iid = el.dataset.iid, field = el.dataset.f;
+  var val = parseFloat(el.value) || 0;
+  var p = state.projects.find(function(p){ return p.id===pid; });
+  if (!p) return;
+  var inst = p.instruments.find(function(i){ return i.id===iid; });
+  if (!inst) return;
+  inst[field] = val;
+  saveData();
+  // Partial update: stats + instrument totals only
+  var c = calc(p);
+  var statsEl = document.getElementById('pstats-'+pid);
+  if (statsEl) statsEl.innerHTML = statsHtml(p, c);
+  renderSummary();
+});
+
+function addInstInline(projId) {
+  var name = prompt('Название инструмента:');
+  if (!name || !name.trim()) return;
+  var p = state.projects.find(function(p){ return p.id===projId; });
+  if (!p) return;
+  p.instruments.push({id:'ci'+Date.now(), name:name.trim(), plan:0, fact:0});
+  saveData(); render();
+  setTimeout(function() {
+    var b = document.getElementById('ib-'+projId), a = document.getElementById('ia-'+projId);
+    if (b && !b.classList.contains('open')){ b.classList.add('open'); a.textContent='▾'; }
+  }, 30);
+}
+
+// PROJECT ACTIONS
+function setStatus(id, status) {
+  var p = state.projects.find(function(p){ return p.id===id; });
+  if (p) { p.status=status; saveData(); render(); }
+}
+function deleteProj(id) {
+  if (!confirm('Удалить проект и все данные?')) return;
+  state.projects = state.projects.filter(function(p){ return p.id!==id; });
+  saveData(); render();
+}
+
+// PROJECT MODAL
+function openProjModal(projId) {
+  editingId = projId || null;
+  document.getElementById('modal-proj-title').textContent = projId ? 'Редактировать проект' : 'Новый проект';
+  if (projId) {
+    var p = state.projects.find(function(p){ return p.id===projId; });
+    document.getElementById('p-name').value = p.name;
+    document.getElementById('p-type').value = p.clientType;
+    document.getElementById('p-vkid').value = p.vkCampaignId || '';
+    document.getElementById('p-status').value = p.status;
+    document.getElementById('p-limit').value = p.budgetLimit || '';
+    document.getElementById('p-received').value = p.received || '';
+    document.getElementById('p-commission').checked = p.commission;
+    document.getElementById('p-vat').value = p.vat || '';
+    modalInsts = p.instruments.map(function(i){ return Object.assign({},i); });
+  } else {
+    ['p-name','p-vkid','p-limit','p-received','p-vat'].forEach(function(id){ document.getElementById(id).value=''; });
+    document.getElementById('p-type').value = 'артист';
+    document.getElementById('p-status').value = 'active';
+    document.getElementById('p-commission').checked = false;
+    modalInsts = makeInsts();
+  }
+  renderModalInsts();
+  document.getElementById('modal-project').classList.add('open');
+  setTimeout(function(){ document.getElementById('p-name').focus(); }, 60);
+}
+function closeProjModal(){ document.getElementById('modal-project').classList.remove('open'); editingId=null; }
+
+function renderModalInsts() {
+  document.getElementById('mi-body').innerHTML = modalInsts.map(function(inst, idx) {
+    return '<tr>' +
+      '<td><input class="mi-name-inp" value="'+esc(inst.name)+'" onchange="modalInsts['+idx+'].name=this.value" /></td>' +
+      '<td><input class="mi-num-inp" type="number" value="'+(inst.plan||'')+'" min="0" placeholder="0" onchange="modalInsts['+idx+'].plan=parseFloat(this.value)||0" /></td>' +
+      '<td><input class="mi-num-inp" type="number" value="'+(inst.fact||'')+'" min="0" placeholder="0" onchange="modalInsts['+idx+'].fact=parseFloat(this.value)||0" /></td>' +
+      '<td><button class="mi-del" onclick="removeModalInst('+idx+')">✕</button></td>' +
+    '</tr>';
+  }).join('');
+}
+function addModalInst() {
+  var name = prompt('Название инструмента:');
+  if (!name || !name.trim()) return;
+  modalInsts.push({id:'ci'+Date.now(), name:name.trim(), plan:0, fact:0});
+  renderModalInsts();
+}
+function removeModalInst(idx){ modalInsts.splice(idx,1); renderModalInsts(); }
+
+function saveProject() {
+  var name = document.getElementById('p-name').value.trim();
+  if (!name){ flash('p-name'); return; }
+  var data = {
+    name: name,
+    clientType: document.getElementById('p-type').value,
+    vkCampaignId: document.getElementById('p-vkid').value.trim(),
+    status: document.getElementById('p-status').value,
+    budgetLimit: parseFloat(document.getElementById('p-limit').value)||0,
+    received: parseFloat(document.getElementById('p-received').value)||0,
+    commission: document.getElementById('p-commission').checked,
+    vat: parseFloat(document.getElementById('p-vat').value)||0,
+    instruments: modalInsts.map(function(i){ return Object.assign({},i); })
+  };
+  if (editingId) {
+    var p = state.projects.find(function(p){ return p.id===editingId; });
+    Object.assign(p, data);
+  } else {
+    data.id = 'p'+Date.now();
+    data.createdAt = new Date().toISOString();
+    data.transfers = [];
+    state.projects.unshift(data);
+  }
+  saveData(); closeProjModal(); render();
+}
+
+// TRANSFER MODAL
+function openTransferModal(projId) {
+  transferFromId = projId;
+  var p = state.projects.find(function(p){ return p.id===projId; });
+  var c = calc(p);
+  document.getElementById('tr-from-name').value = p.name;
+  document.getElementById('tr-from-bal').value = fmt(c.remaining);
+  document.getElementById('tr-amount').value = c.remaining > 0 ? c.remaining : '';
+  document.getElementById('tr-comment').value = '';
+  var others = state.projects.filter(function(p){ return p.id!==projId; });
+  document.getElementById('tr-to').innerHTML = others.length
+    ? others.map(function(p){ return '<option value="'+p.id+'">'+esc(p.name)+'</option>'; }).join('')
+    : '<option value="">— нет других проектов —</option>';
+  document.getElementById('modal-transfer').classList.add('open');
+}
+function closeTransferModal(){ document.getElementById('modal-transfer').classList.remove('open'); transferFromId=null; }
+
+function doTransfer() {
+  var toId = document.getElementById('tr-to').value;
+  var amount = parseFloat(document.getElementById('tr-amount').value)||0;
+  var comment = document.getElementById('tr-comment').value.trim();
+  if (!toId || amount<=0){ if(amount<=0) flash('tr-amount'); return; }
+  var from = state.projects.find(function(p){ return p.id===transferFromId; });
+  var to = state.projects.find(function(p){ return p.id===toId; });
+  if (!from||!to) return;
+  var date = new Date().toISOString();
+  if (!from.transfers) from.transfers=[];
+  if (!to.transfers) to.transfers=[];
+  var note = comment ? ': '+comment : '';
+  from.transfers.push({direction:'out', date:date, amount:amount, description:'→ '+to.name+note});
+  to.transfers.push({direction:'in', date:date, amount:amount, description:'← '+from.name+note});
+  to.received += amount;
+  saveData(); closeTransferModal(); render();
+}
+
+// UTILS
+function flash(id){ var el=document.getElementById(id); if(!el) return; el.style.borderColor='var(--red)'; setTimeout(function(){ el.style.borderColor=''; },1000); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Close overlays on bg click
+document.getElementById('modal-project').addEventListener('click', function(e){ if(e.target===this) closeProjModal(); });
+document.getElementById('modal-transfer').addEventListener('click', function(e){ if(e.target===this) closeTransferModal(); });
+
+// INIT
+loadData();
+render();
+</script>
+</body>
+</html>
