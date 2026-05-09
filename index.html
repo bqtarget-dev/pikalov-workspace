@@ -228,13 +228,27 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <div class="mrow">
       <div class="field">
         <div class="check-row">
-          <input type="checkbox" id="p-commission" />
-          <label for="p-commission">Комиссия агентства 10%</label>
+          <input type="checkbox" id="p-comm10" onchange="commRadio(10)" />
+          <label for="p-comm10">Комиссия агентства 10%</label>
+        </div>
+        <div class="check-row">
+          <input type="checkbox" id="p-comm20" onchange="commRadio(20)" />
+          <label for="p-comm20">Комиссия агентства 20%</label>
+        </div>
+        <div class="check-row">
+          <input type="checkbox" id="p-comm25" onchange="commRadio(25)" />
+          <label for="p-comm25">Комиссия агентства 25%</label>
         </div>
       </div>
       <div class="field">
-        <label>Наша комиссия, %</label>
+        <label>Комиссия площадки, %</label>
         <input type="number" id="p-vat" placeholder="0" min="0" max="100" />
+      </div>
+    </div>
+    <div class="mrow">
+      <div class="field">
+        <label>Фиксированный гонорар, ₽</label>
+        <input type="number" id="p-honorar" placeholder="0" min="0" />
       </div>
     </div>
 
@@ -314,11 +328,13 @@ function makeInsts() {
 function calc(p) {
   var plan = p.instruments.reduce(function(s,i){ return s+i.plan; }, 0);
   var fact = p.instruments.reduce(function(s,i){ return s+i.fact; }, 0);
-  var comm = p.commission ? p.budgetLimit * 0.10 * (1 + (p.vat||0)/100) : 0;
-  var agencyComm = p.commission ? p.received * 0.10 : 0;
+  var commPct = p.commissionPct || (p.commission ? 10 : 0);
+  var comm = commPct ? p.budgetLimit * commPct / 100 : 0;
+  var agencyComm = commPct ? p.received * commPct / 100 : 0;
   var ourComm = p.received * (p.vat||0) / 100;
-  var adBudget = p.received - agencyComm - ourComm;
-  return { plan:plan, fact:fact, remaining:p.budgetLimit-fact, debt:p.budgetLimit-p.received, commission:comm, adBudget:adBudget };
+  var honorar = p.honorar || 0;
+  var adBudget = p.received - agencyComm - ourComm - honorar;
+  return { plan:plan, fact:fact, remaining:p.budgetLimit-fact, debt:p.budgetLimit-p.received, commission:comm, adBudget:adBudget, commPct:commPct };
 }
 
 function fmt(n) { return Number(n||0).toLocaleString('ru')+' ₽'; }
@@ -376,6 +392,7 @@ function projCard(p) {
   var fill = pct < 80 ? 'var(--green)' : pct < 100 ? 'var(--amber)' : 'var(--red)';
   var spClass = {active:'sp-active',done:'sp-done',pause:'sp-pause'}[p.status];
   var spLabel = {active:'В работе',done:'Завершён',pause:'Пауза'}[p.status];
+  var commPct2 = p.commissionPct || (p.commission ? 10 : 0);
 
   var head = '<div class="proj-head">' +
     '<div>' +
@@ -383,7 +400,8 @@ function projCard(p) {
       '<div class="proj-meta">' +
         '<span class="badge">'+esc(p.clientType)+'</span>' +
         (p.vkCampaignId ? '<span class="vk-id-badge">VK '+esc(p.vkCampaignId)+'</span>' : '') +
-        (p.commission ? '<span class="badge">Комиссия 10%'+(p.vat?' + Наша комиссия '+p.vat+'%':'')+'</span>' : '') +
+        (commPct2 ? '<span class="badge">Комиссия '+commPct2+'%'+(p.vat?' + площадка '+p.vat+'%':'')+'</span>' : '') +
+        (p.honorar ? '<span class="badge">Гонорар '+fmt(p.honorar)+'</span>' : '') +
         '<span class="badge" style="color:var(--text3)">'+fmtD(p.createdAt)+'</span>' +
       '</div>' +
     '</div>' +
@@ -411,7 +429,7 @@ function statsHtml(p, c) {
     ps('Итого факт', fmt(c.fact), 'cp') +
     ps('Остаток', fmt(c.remaining), c.remaining < 0 ? 'cr' : 'ca') +
     ps('Долг', fmt(c.debt), c.debt <= 0 ? 'cg' : 'cr') +
-    (p.commission ? ps('Комиссия', fmt(c.commission), 'ca') : ps('Комиссия', '—', '')) +
+    (c.commPct ? ps('Комиссия '+c.commPct+'%', fmt(c.commission), 'ca') : ps('Комиссия', '—', '')) +
     '<div class="ps accent"><div class="ps-lbl">К расходу</div><div class="ps-val">'+fmt(c.adBudget)+'</div></div>';
 }
 function ps(l,v,cls){ return '<div class="ps"><div class="ps-lbl">'+l+'</div><div class="ps-val '+cls+'">'+v+'</div></div>'; }
@@ -527,14 +545,16 @@ function openProjModal(projId) {
     document.getElementById('p-status').value = p.status;
     document.getElementById('p-limit').value = p.budgetLimit || '';
     document.getElementById('p-received').value = p.received || '';
-    document.getElementById('p-commission').checked = p.commission;
+    var loadCommPct = p.commissionPct || (p.commission ? 10 : 0);
+    [10,20,25].forEach(function(v){ document.getElementById('p-comm'+v).checked = v===loadCommPct; });
     document.getElementById('p-vat').value = p.vat || '';
+    document.getElementById('p-honorar').value = p.honorar || '';
     modalInsts = p.instruments.map(function(i){ return Object.assign({},i); });
   } else {
-    ['p-name','p-vkid','p-limit','p-received','p-vat'].forEach(function(id){ document.getElementById(id).value=''; });
+    ['p-name','p-vkid','p-limit','p-received','p-vat','p-honorar'].forEach(function(id){ document.getElementById(id).value=''; });
     document.getElementById('p-type').value = 'артист';
     document.getElementById('p-status').value = 'active';
-    document.getElementById('p-commission').checked = false;
+    [10,20,25].forEach(function(v){ document.getElementById('p-comm'+v).checked = false; });
     modalInsts = makeInsts();
   }
   renderModalInsts();
@@ -561,6 +581,10 @@ function addModalInst() {
 }
 function removeModalInst(idx){ modalInsts.splice(idx,1); renderModalInsts(); }
 
+function commRadio(pct) {
+  [10,20,25].forEach(function(v){ if(v!==pct) document.getElementById('p-comm'+v).checked=false; });
+}
+
 function saveProject() {
   var name = document.getElementById('p-name').value.trim();
   if (!name){ flash('p-name'); return; }
@@ -571,8 +595,9 @@ function saveProject() {
     status: document.getElementById('p-status').value,
     budgetLimit: parseFloat(document.getElementById('p-limit').value)||0,
     received: parseFloat(document.getElementById('p-received').value)||0,
-    commission: document.getElementById('p-commission').checked,
+    commissionPct: [10,20,25].reduce(function(found,v){ return found || (document.getElementById('p-comm'+v).checked ? v : 0); }, 0),
     vat: parseFloat(document.getElementById('p-vat').value)||0,
+    honorar: parseFloat(document.getElementById('p-honorar').value)||0,
     instruments: modalInsts.map(function(i){ return Object.assign({},i); })
   };
   if (editingId) {
