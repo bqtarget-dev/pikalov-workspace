@@ -297,11 +297,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
       <label>Бюджет к расходу, ₽ <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(авто = Получено − гонорар)</span></label>
       <input type="number" id="p-limit" placeholder="0" min="0" oninput="limitDirty=true" />
     </div>
-    <div class="check-row" style="padding-bottom:4px">
-      <input type="checkbox" id="p-agency-comm" />
-      <label for="p-agency-comm">Агентская комиссия</label>
-    </div>
-
     <div class="msection">Инструменты рекламы</div>
     <table class="mi-table">
       <thead>
@@ -495,7 +490,6 @@ function projCard(p) {
       '<span class="badge">'+esc(p.clientType)+'</span>' +
       (p.vkCampaignId ? '<span class="vk-id-badge">VK '+esc(p.vkCampaignId)+'</span>' : '') +
       (hLabel ? '<span class="badge">'+hLabel+'</span>' : '') +
-      (p.agencyComm ? '<span class="badge">Агентская комиссия</span>' : '') +
       '<span class="badge" style="color:var(--text3)">'+fmtD(p.createdAt)+'</span>' +
     '</div></div>' +
     '<span class="status-pill '+spCls+'">'+spLbl+'</span></div>';
@@ -512,15 +506,15 @@ function projCard(p) {
 }
 
 function statsHtml(p, c) {
-  return ps('Получено',         fmt(p.received),  'cg') +
-    ps('Наш гонорар',           fmt(c.honorarAmt),'ca') +
-    ps('К расходу',             fmt(c.adBudget),  'cp') +
-    ps('Итого сгорит',          fmt(c.totalBurn), 'cr') +
+  return ps('Получено',          fmt(p.received),  'cg') +
+    ps('Итого факт',             fmt(c.fact),      'cp') +
+    ps('К расходу',              fmt(c.adBudget),  'cp') +
+    ps('Комиссия площадки',      fmt(c.totalBurn), 'cr') +
     '<div class="ps accent"><div class="ps-lbl">На рекламу</div><div class="ps-val">'+fmt(c.realAd)+'</div></div>' +
-    ps('Итого план',            fmt(c.plan),      'cp') +
-    ps('Итого факт',            fmt(c.fact),      'cp') +
-    ps('Остаток',               fmt(c.remaining), c.remaining<0?'cr':'cg') +
-    ps('Долг клиента',          c.debt>0?fmt(c.debt):'—', c.debt>0?'cr':'');
+    ps('Итого план',             fmt(c.plan),      'cp') +
+    ps('Наш гонорар',            fmt(c.honorarAmt),'ca') +
+    ps('Остаток',                fmt(c.remaining), c.remaining<0?'cr':'cg') +
+    ps('Долг клиента',           c.debt>0?fmt(c.debt):'—', c.debt>0?'cr':'');
 }
 function ps(l,v,cls){
   return '<div class="ps"><div class="ps-lbl">'+l+'</div><div class="ps-val '+cls+'">'+v+'</div></div>';
@@ -703,7 +697,6 @@ function openProjModal(projId) {
     document.getElementById('p-status').value       = p.status;
     document.getElementById('p-received').value     = p.received || '';
     document.getElementById('p-limit').value        = p.budgetLimit || '';
-    document.getElementById('p-agency-comm').checked= !!p.agencyComm;
     var h = honorarCalc(p);
     document.getElementById('p-honorar-fixed').value = h.fixed || '';
     var pctToSelect = h.fixed > 0 ? 0 : h.pct;
@@ -718,7 +711,6 @@ function openProjModal(projId) {
     });
     document.getElementById('p-type').value          = 'артист';
     document.getElementById('p-status').value        = 'active';
-    document.getElementById('p-agency-comm').checked = false;
     document.getElementById('p-hp0').checked         = true;
     document.getElementById('p-honorar-hint').textContent = '';
     modalInsts = makeInsts();
@@ -779,7 +771,6 @@ function saveProject() {
     honorarPct:  honorarPct,
     honorarFixed:honorarFixed,
     budgetLimit: budgetLimit,
-    agencyComm:  document.getElementById('p-agency-comm').checked,
     instruments: modalInsts.map(function(i){return Object.assign({},i);})
   };
   if (editingId) {
