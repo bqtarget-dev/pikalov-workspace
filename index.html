@@ -184,6 +184,31 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .chart-bar.hon{background:var(--amber)}
 .chart-bar.ad{background:var(--accent);opacity:.8}
 .chart-lbl{font-size:8px;color:var(--text3);margin-top:4px;white-space:nowrap}
+
+/* Mediaplan clickable stat cell */
+.mp-link{cursor:pointer;transition:background .15s,border-color .15s;border:.5px solid transparent}
+.mp-link:hover{background:rgba(127,110,245,.18)!important;border-color:rgba(127,110,245,.35)}
+.mp-link .ps-lbl::after{content:' ↗';opacity:.45}
+
+/* Mediaplan modal table */
+.mp-table{width:100%;border-collapse:collapse;margin-bottom:16px}
+.mp-table th{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);padding:9px 12px;font-weight:400;text-align:right;background:var(--bg3);border-bottom:.5px solid var(--border2)}
+.mp-table th:first-child{text-align:left}
+.mp-table td{padding:9px 12px;font-size:13px;text-align:right;border-bottom:.5px solid var(--border)}
+.mp-table td:first-child{text-align:left;font-weight:500}
+.mp-table tbody tr:nth-child(odd) td{background:var(--bg2)}
+.mp-table tbody tr:nth-child(even) td{background:var(--bg3)}
+.mp-table tbody tr:hover td{background:var(--bg4)}
+.mp-table tfoot td{padding:10px 12px;font-size:12px;font-weight:600;border-top:.5px solid var(--border2);background:rgba(127,110,245,.1);color:var(--accent2)}
+.mp-table tfoot td:first-child{color:var(--text)}
+.mp-summary{background:var(--bg3);border:.5px solid var(--border2);border-radius:10px;padding:14px 16px;margin-top:4px}
+.mp-sum-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;border-bottom:.5px solid var(--border)}
+.mp-sum-row:last-child{border-bottom:none;padding-top:10px;margin-top:4px;font-weight:600}
+.mp-sum-lbl{color:var(--text2)}
+.mp-share-btn{background:var(--bg4);color:var(--text2);border:.5px solid var(--border2);border-radius:8px;padding:10px 18px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
+.mp-share-btn:hover{color:var(--text);border-color:var(--border)}
+.mp-copied{color:var(--green);font-size:11px;margin-left:8px;opacity:0;transition:opacity .3s}
+.mp-copied.show{opacity:1}
 </style>
 </head>
 <body>
@@ -317,6 +342,26 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <div class="modal-actions">
       <button class="mcancel" onclick="closeProjModal()">Отмена</button>
       <button class="mbtn" onclick="saveProject()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Mediaplan -->
+<div class="overlay" id="modal-mediaplan">
+  <div class="modal" style="max-width:700px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:12px">
+      <div class="modal-title" id="mp-title" style="font-size:18px;line-height:1.2"></div>
+      <button class="mcancel" onclick="closeMediaplanModal()" style="padding:6px 12px;flex-shrink:0">✕</button>
+    </div>
+    <div class="check-row" style="margin-bottom:14px">
+      <input type="checkbox" id="mp-show-honorar" checked onchange="renderMediaplanTable()">
+      <label for="mp-show-honorar" style="font-size:12px;color:var(--text2)">Показать гонорар</label>
+    </div>
+    <div id="mp-table-wrap"></div>
+    <div id="mp-summary"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="mcancel" onclick="closeMediaplanModal()">Закрыть</button>
+      <button class="mp-share-btn" onclick="shareMediaplan()">🔗 Поделиться<span class="mp-copied" id="mp-copied">Ссылка скопирована</span></button>
     </div>
   </div>
 </div>
@@ -509,7 +554,10 @@ function statsHtml(p, c) {
   return ps('Получено',          fmt(p.received),  'cg') +
     ps('Гонорар',                fmt(c.honorarAmt),'ca') +
     ps('Бюджет клиента',         fmt(c.adBudget),  'cp') +
-    ps('Медиаплан клиента',      fmt(c.plan),      'cp') +
+    '<div class="ps mp-link" onclick="openMediaplanModal(\''+p.id+'\')" title="Открыть медиаплан">' +
+      '<div class="ps-lbl">Медиаплан клиента</div>' +
+      '<div class="ps-val cp">'+fmt(c.plan)+'</div>' +
+    '</div>' +
     ps('Комиссия площадок',      fmt(c.totalBurn), 'cr') +
     '<div class="ps accent"><div class="ps-lbl">На рекламу</div><div class="ps-val">'+fmt(c.realAd)+'</div></div>' +
     ps('Остаток',                fmt(c.remaining), c.remaining<0?'cr':'ca') +
@@ -963,12 +1011,96 @@ function renderChart() {
   '</div>';
 }
 
+// ── MEDIAPLAN MODAL ───────────────────────────────────────────────────
+var mediaPlanProjId = null;
+
+function openMediaplanModal(projId) {
+  mediaPlanProjId = projId;
+  var p = state.projects.find(function(p){return p.id===projId;});
+  if (!p) return;
+  document.getElementById('mp-title').textContent = p.name;
+  document.getElementById('mp-show-honorar').checked = true;
+  renderMediaplanTable();
+  document.getElementById('modal-mediaplan').classList.add('open');
+}
+
+function closeMediaplanModal() {
+  document.getElementById('modal-mediaplan').classList.remove('open');
+  mediaPlanProjId = null;
+}
+
+function renderMediaplanTable() {
+  var p = state.projects.find(function(p){return p.id===mediaPlanProjId;});
+  if (!p) return;
+  var showHonorar = document.getElementById('mp-show-honorar').checked;
+  var c = calc(p);
+  var insts = (p.instruments||[]).filter(function(i){return i.plan>0;});
+
+  var rows = insts.map(function(inst){
+    var burn  = Math.round(inst.plan * (inst.platformComm||0) / 100);
+    var toKab = inst.plan - burn;
+    var hasComm = (inst.platformComm||0) > 0;
+    return '<tr>' +
+      '<td>'+esc(inst.name)+'</td>' +
+      '<td class="cp">'+fmt(inst.plan)+'</td>' +
+      '<td style="color:var(--text3)">'+(hasComm ? inst.platformComm+'%' : '—')+'</td>' +
+      '<td>'+(hasComm ? '<span class="ca">'+fmt(burn)+'</span>' : '<span style="color:var(--text3)">—</span>')+'</td>' +
+      '<td>'+(hasComm ? '<span class="cg">'+fmt(toKab)+'</span>' : '<span class="cg">'+fmt(inst.plan)+'</span>')+'</td>' +
+    '</tr>';
+  }).join('') || '<tr><td colspan="5" style="color:var(--text3);text-align:center;padding:16px">Нет инструментов с бюджетом</td></tr>';
+
+  var totalPlan2 = insts.reduce(function(s,i){return s+i.plan;},0);
+  var totalBurn2 = insts.reduce(function(s,i){return s+Math.round(i.plan*(i.platformComm||0)/100);},0);
+
+  document.getElementById('mp-table-wrap').innerHTML =
+    '<table class="mp-table">' +
+      '<thead><tr>' +
+        '<th>Площадка</th><th>Бюджет</th><th>Комиссия</th><th>Сгорит</th><th>Лимит в кабинете</th>' +
+      '</tr></thead>' +
+      '<tbody>'+rows+'</tbody>' +
+      '<tfoot><tr>' +
+        '<td>Итого</td>' +
+        '<td>'+fmt(totalPlan2)+'</td>' +
+        '<td></td>' +
+        '<td class="ca">'+fmt(totalBurn2)+'</td>' +
+        '<td class="cg">'+fmt(totalPlan2-totalBurn2)+'</td>' +
+      '</tr></tfoot>' +
+    '</table>';
+
+  var remaining = c.adBudget - c.plan;
+  var sumRows =
+    '<div class="mp-sum-row"><span class="mp-sum-lbl">Получено от клиента</span><span class="mp-sum-val cg">'+fmt(p.received)+'</span></div>';
+  if (showHonorar && c.honorarAmt > 0) {
+    sumRows += '<div class="mp-sum-row"><span class="mp-sum-lbl">Гонорар</span><span class="mp-sum-val ca">'+fmt(c.honorarAmt)+'</span></div>';
+  }
+  sumRows +=
+    '<div class="mp-sum-row"><span class="mp-sum-lbl">Бюджет клиента</span><span class="mp-sum-val cp">'+fmt(c.adBudget)+'</span></div>' +
+    '<div class="mp-sum-row"><span class="mp-sum-lbl">Нераспределённый остаток</span><span class="mp-sum-val '+(remaining>=0?'ca':'cr')+'">'+fmt(remaining)+'</span></div>';
+  document.getElementById('mp-summary').innerHTML = '<div class="mp-summary">'+sumRows+'</div>';
+}
+
+function shareMediaplan() {
+  if (!mediaPlanProjId) return;
+  var base = location.href.replace(/[?#].*$/, '').replace(/index\.html$/, '');
+  var url = base + 'mediaplan.html?id=' + mediaPlanProjId;
+  var copied = document.getElementById('mp-copied');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function(){
+      copied.classList.add('show');
+      setTimeout(function(){ copied.classList.remove('show'); }, 2000);
+    });
+  } else {
+    prompt('Ссылка на медиаплан:', url);
+  }
+}
+
 // ── UTILS ─────────────────────────────────────────────────────────────
 function flash(id){ var el=document.getElementById(id); if(!el) return; el.style.borderColor='var(--red)'; setTimeout(function(){el.style.borderColor='';},1000); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 document.getElementById('modal-project').addEventListener('click',function(e){if(e.target===this)closeProjModal();});
 document.getElementById('modal-transfer').addEventListener('click',function(e){if(e.target===this)closeTransferModal();});
+document.getElementById('modal-mediaplan').addEventListener('click',function(e){if(e.target===this)closeMediaplanModal();});
 
 loadData();
 render();
