@@ -58,8 +58,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .progress-fill{height:100%;border-radius:2px;transition:width .3s}
 .progress-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px}
 
-/* Stats — 3 cols × 3 rows */
-.proj-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:10px 20px}
+/* Stats — 5 cols × 2 rows */
+.proj-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:10px 20px}
 .ps{background:var(--bg4);border-radius:7px;padding:8px 6px;text-align:center}
 .ps-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);margin-bottom:3px}
 .ps-val{font-size:11px;font-weight:500}
@@ -407,14 +407,15 @@ function calc(p) {
   var totalBurn = insts.reduce(function(s,i){
     return s + Math.round(i.plan * (i.platformComm||0) / 100);
   },0);
-  var realAd    = adBudget - totalBurn;
-  var remaining = realAd - fact;
-  var debt      = Math.max(0, adBudget - p.received);
+  var realAd        = adBudget - totalBurn;
+  var remaining     = adBudget - plan;      // Остаток = К расходу − Итого план
+  var remainingFact = adBudget - fact;      // Остаток факт = К расходу − Потрачено факт
+  var debt          = Math.max(0, adBudget - p.received);
   return {
     plan:plan, fact:fact,
     honorarAmt:h.amt, honorarPct:h.pct,
     adBudget:adBudget, totalBurn:totalBurn, realAd:realAd,
-    remaining:remaining, debt:debt
+    remaining:remaining, remainingFact:remainingFact, debt:debt
   };
 }
 
@@ -506,15 +507,18 @@ function projCard(p) {
 }
 
 function statsHtml(p, c) {
-  return ps('Получено',          fmt(p.received),  'cg') +
-    ps('Наш гонорар',            fmt(c.honorarAmt),'ca') +
-    ps('К расходу',              fmt(c.adBudget),  'cp') +
-    ps('Комиссия площадки',      fmt(c.totalBurn), 'cr') +
+  // Row 1: money flow
+  return ps('Получено',        fmt(p.received),       'cg') +
+    ps('Наш гонорар',          fmt(c.honorarAmt),     'ca') +
+    ps('К расходу',            fmt(c.adBudget),       'cp') +
+    ps('Комиссия площадки',    fmt(c.totalBurn),      'cr') +
     '<div class="ps accent"><div class="ps-lbl">На рекламу</div><div class="ps-val">'+fmt(c.realAd)+'</div></div>' +
-    ps('Итого план',             fmt(c.plan),      'cp') +
-    ps('Итого факт',             fmt(c.fact),      'cp') +
-    ps('Остаток',                fmt(c.remaining), c.remaining<0?'cr':'cg') +
-    ps('Долг клиента',           c.debt>0?fmt(c.debt):'—', c.debt>0?'cr':'');
+    // Row 2: execution
+    ps('Итого план',           fmt(c.plan),           'cp') +
+    ps('Потрачено факт',       fmt(c.fact),           'cp') +
+    ps('Остаток',              fmt(c.remaining),      c.remaining<0?'cr':'ca') +
+    ps('Остаток факт',         fmt(c.remainingFact),  c.remainingFact<0?'cr':'cg') +
+    ps('Долг клиента',         c.debt>0?fmt(c.debt):'—', c.debt>0?'cr':'');
 }
 function ps(l,v,cls){
   return '<div class="ps"><div class="ps-lbl">'+l+'</div><div class="ps-val '+cls+'">'+v+'</div></div>';
