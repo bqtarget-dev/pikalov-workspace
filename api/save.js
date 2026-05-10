@@ -1,6 +1,5 @@
 const JSONBIN = 'https://api.jsonbin.io/v3';
 const MASTER_KEY = process.env.JSONBIN_MASTER_KEY;
-const BIN_ID = process.env.JSONBIN_SAVE_BIN_ID;
 
 async function readBin(binId) {
   try {
@@ -74,46 +73,40 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'JSONBIN_MASTER_KEY not set in Vercel env vars' });
   }
 
-  // GET /api/save?key=project_XXX — return saved project data
+  // GET /api/save?key=project_XXX&bid=YYY
   if (req.method === 'GET') {
-    const { key } = req.query;
+    const { key, bid } = req.query;
     if (!key) return res.status(400).json({ error: 'key required' });
+    if (!bid)  return res.status(400).json({ error: 'bid required' });
 
-    if (!BIN_ID) {
-      return res.status(503).json({ error: 'JSONBIN_SAVE_BIN_ID not set — run a share first to get the bin ID' });
-    }
-
-    const store = await readBin(BIN_ID);
+    const store = await readBin(bid);
     const data = store[key];
     if (data === undefined) return res.status(404).json({ error: 'not_found' });
     return res.status(200).json({ data });
   }
 
-  // POST /api/save — save {key, data} into the shared store bin
+  // POST /api/save — body: {key, data, bid?}
   if (req.method === 'POST') {
     const body = req.body || {};
-    const { key, data } = body;
+    const { key, data, bid: bodyBid } = body;
     if (!key || data === undefined) {
       return res.status(400).json({ error: 'key and data required' });
     }
 
-    let binId = BIN_ID;
-    let setupRequired = false;
+    let binId = bodyBid || null;
 
     if (!binId) {
-      console.log('[POST /api/save] JSONBIN_SAVE_BIN_ID not set — auto-creating bin');
       binId = await createBin();
       if (!binId) return res.status(500).json({ error: 'Failed to create JSONBin' });
-      console.log('[POST /api/save] created bin', binId);
-      setupRequired = true;
+      console.log('[POST /api/save] created new bin', binId);
     }
 
     const store = await readBin(binId);
     store[key] = data;
     const ok = await writeBin(binId, store);
-    if (!ok) console.error('[POST /api/save] writeBin failed');
+    if (!ok) console.error('[POST /api/save] writeBin failed for bin', binId);
 
-    return res.status(ok ? 200 : 500).json({ ok, bin_id: binId, setup_required: setupRequired });
+    return res.status(ok ? 200 : 500).json({ ok, bin_id: binId });
   }
 
   return res.status(405).json({ error: 'method_not_allowed' });

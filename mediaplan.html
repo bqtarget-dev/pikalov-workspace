@@ -79,6 +79,7 @@ function calc(p) {
 
 var params = new URLSearchParams(location.search);
 var id = params.get('id');
+var bid = params.get('bid') || '';
 var showHonor = params.get('sh') !== '0';
 var page = document.getElementById('page');
 
@@ -146,7 +147,7 @@ if (!id) {
   page.innerHTML = '<div class="error">Идентификатор проекта не указан в ссылке.</div>';
 } else {
   // Try server first, fall back to localStorage on same device
-  fetch('/api/save?key=project_' + id)
+  fetch('/api/save?key=project_' + id + '&bid=' + bid)
     .then(function(res){ return res.json(); })
     .then(function(json){
       if (json.data) {

@@ -1115,22 +1115,24 @@ async function shareMediaplan() {
   labelNode.textContent = '⏳ Сохранение...';
 
   try {
+    var savedBid = localStorage.getItem('jsonbin_save_id') || undefined;
     var res = await fetch('/api/save', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({key: 'project_' + p.id, data: p})
+      body: JSON.stringify({key: 'project_' + p.id, data: p, bid: savedBid})
     });
     var json = await res.json();
 
-    if (json.setup_required) {
-      alert('Бин создан автоматически.\nУстановите переменную окружения в Vercel:\nJSONBIN_SAVE_BIN_ID = ' + json.bin_id + '\n\nПосле этого ссылки будут работать на любом устройстве.');
-    } else if (!json.ok) {
-      alert('Ошибка сохранения на сервер. Проверьте настройки Vercel.');
+    if (!json.ok) {
+      alert('Ошибка сохранения на сервер. Проверьте JSONBIN_MASTER_KEY в настройках Vercel.');
       return;
     }
 
+    // Persist the bin id so future saves reuse the same bin
+    if (json.bin_id) localStorage.setItem('jsonbin_save_id', json.bin_id);
+
     var base = location.href.replace(/[?#].*$/, '').replace(/index\.html$/, '');
-    var url = base + 'mediaplan.html?id=' + mediaPlanProjId + '&sh=' + showHonor;
+    var url = base + 'mediaplan.html?id=' + mediaPlanProjId + '&bid=' + json.bin_id + '&sh=' + showHonor;
 
     if (navigator.clipboard) {
       await navigator.clipboard.writeText(url);
