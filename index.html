@@ -363,7 +363,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <div id="mp-summary"></div>
     <div class="modal-actions" style="margin-top:16px">
       <button class="mcancel" onclick="closeMediaplanModal()">Закрыть</button>
-      <button class="mp-share-btn" onclick="shareMediaplan()">🔗 Поделиться<span class="mp-copied" id="mp-copied">Ссылка скопирована</span></button>
+      <button class="mp-share-btn" id="mp-share-btn" onclick="shareMediaplan()">🔗 Поделиться<span class="mp-copied" id="mp-copied">Ссылка скопирована</span></button>
     </div>
   </div>
 </div>
@@ -1100,19 +1100,51 @@ function mpUpdateComm(instId, val) {
   renderSummary();
 }
 
-function shareMediaplan() {
+async function shareMediaplan() {
   if (!mediaPlanProjId) return;
+  var p = state.projects.find(function(x){return x.id===mediaPlanProjId;});
+  if (!p) return;
   var showHonor = document.getElementById('mp-show-honorar').checked ? '1' : '0';
-  var base = location.href.replace(/[?#].*$/, '').replace(/index\.html$/, '');
-  var url = base + 'mediaplan.html?id=' + mediaPlanProjId + '&sh=' + showHonor;
+  var btn = document.getElementById('mp-share-btn');
   var copied = document.getElementById('mp-copied');
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(function(){
-      copied.classList.add('show');
-      setTimeout(function(){ copied.classList.remove('show'); }, 2000);
+
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  var labelNode = btn.childNodes[0];
+  var origText = labelNode.textContent;
+  labelNode.textContent = '⏳ Сохранение...';
+
+  try {
+    var res = await fetch('/api/save', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({key: 'project_' + p.id, data: p})
     });
-  } else {
-    prompt('Ссылка на медиаплан:', url);
+    var json = await res.json();
+
+    if (json.setup_required) {
+      alert('Бин создан автоматически.\nУстановите переменную окружения в Vercel:\nJSONBIN_SAVE_BIN_ID = ' + json.bin_id + '\n\nПосле этого ссылки будут работать на любом устройстве.');
+    } else if (!json.ok) {
+      alert('Ошибка сохранения на сервер. Проверьте настройки Vercel.');
+      return;
+    }
+
+    var base = location.href.replace(/[?#].*$/, '').replace(/index\.html$/, '');
+    var url = base + 'mediaplan.html?id=' + mediaPlanProjId + '&sh=' + showHonor;
+
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(url);
+      copied.classList.add('show');
+      setTimeout(function(){ copied.classList.remove('show'); }, 2500);
+    } else {
+      prompt('Ссылка на медиаплан:', url);
+    }
+  } catch (e) {
+    alert('Не удалось сохранить данные: ' + e.message);
+  } finally {
+    labelNode.textContent = origText;
+    btn.disabled = false;
+    btn.style.opacity = '';
   }
 }
 

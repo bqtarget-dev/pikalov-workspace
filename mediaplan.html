@@ -82,75 +82,89 @@ var id = params.get('id');
 var showHonor = params.get('sh') !== '0';
 var page = document.getElementById('page');
 
+function renderProject(p) {
+  var c = calc(p);
+  var insts = (p.instruments || []).filter(function(i){ return i.plan > 0; });
+
+  var rows = insts.map(function(inst){
+    var burn  = Math.round(inst.plan * (inst.platformComm||0) / 100);
+    var toKab = inst.plan - burn;
+    var hasComm = (inst.platformComm||0) > 0;
+    return '<tr>' +
+      '<td>'+esc(inst.name)+'</td>' +
+      '<td class="cp">'+fmt(inst.plan)+'</td>' +
+      '<td style="color:var(--text3)">'+(hasComm ? inst.platformComm+'%' : '—')+'</td>' +
+      '<td>'+(hasComm ? '<span class="ca">'+fmt(burn)+'</span>' : '<span style="color:var(--text3)">—</span>')+'</td>' +
+      '<td>'+(hasComm ? '<span class="cg">'+fmt(toKab)+'</span>' : '<span class="cg">'+fmt(inst.plan)+'</span>')+'</td>' +
+    '</tr>';
+  }).join('') || '<tr><td colspan="5" style="color:var(--text3);text-align:center;padding:16px">Нет инструментов с бюджетом</td></tr>';
+
+  var totalPlan = insts.reduce(function(s,i){return s+i.plan;},0);
+  var totalBurn = insts.reduce(function(s,i){return s+Math.round(i.plan*(i.platformComm||0)/100);},0);
+
+  var displayBudget = showHonor ? c.adBudget : p.received;
+  var remaining = displayBudget - c.plan;
+
+  var sumRows =
+    '<div class="mp-sum-row"><span class="mp-sum-lbl">Получено от клиента</span><span class="mp-sum-val cg">'+fmt(p.received)+'</span></div>';
+  if (showHonor && c.honorarAmt > 0) {
+    sumRows += '<div class="mp-sum-row"><span class="mp-sum-lbl">Гонорар</span><span class="mp-sum-val ca">'+fmt(c.honorarAmt)+'</span></div>';
+  }
+  sumRows +=
+    '<div class="mp-sum-row"><span class="mp-sum-lbl">Бюджет клиента</span><span class="mp-sum-val cp">'+fmt(displayBudget)+'</span></div>' +
+    '<div class="mp-sum-row"><span class="mp-sum-lbl">Нераспределённый остаток</span><span class="mp-sum-val '+(remaining>=0?'ca':'cr')+'">'+fmt(remaining)+'</span></div>';
+
+  page.innerHTML =
+    '<div class="header">' +
+      '<div class="header-left">' +
+        '<div class="proj-name">'+esc(p.name)+'</div>' +
+        '<div class="proj-date">Медиаплан · '+fmtDate(p.createdAt)+'</div>' +
+      '</div>' +
+      '<button class="print-btn" onclick="window.print()">🖨 Печать</button>' +
+    '</div>' +
+    '<table class="mp-table">' +
+      '<thead><tr>' +
+        '<th>Площадка</th>' +
+        '<th>Бюджет</th>' +
+        '<th>Комиссия площадки</th>' +
+        '<th>Сумма площадки</th>' +
+        '<th>Затраты по факту</th>' +
+      '</tr></thead>' +
+      '<tbody>'+rows+'</tbody>' +
+      '<tfoot><tr>' +
+        '<td>Итого</td>' +
+        '<td>'+fmt(totalPlan)+'</td>' +
+        '<td></td>' +
+        '<td class="ca">'+fmt(totalBurn)+'</td>' +
+        '<td class="cg">'+fmt(totalPlan-totalBurn)+'</td>' +
+      '</tr></tfoot>' +
+    '</table>' +
+    '<div class="mp-summary">'+sumRows+'</div>';
+}
+
 if (!id) {
   page.innerHTML = '<div class="error">Идентификатор проекта не указан в ссылке.</div>';
 } else {
-  var raw = [];
-  try { raw = JSON.parse(localStorage.getItem('pm_ws_v1') || '[]'); } catch(e) {}
-  var p = raw.find(function(x){ return x.id === id; });
-
-  if (!p) {
-    page.innerHTML = '<div class="error">Медиаплан не найден.<br>Ссылка работает только на устройстве, где создан проект.</div>';
-  } else {
-    var c = calc(p);
-    var insts = (p.instruments || []).filter(function(i){ return i.plan > 0; });
-
-    var rows = insts.map(function(inst){
-      var burn  = Math.round(inst.plan * (inst.platformComm||0) / 100);
-      var toKab = inst.plan - burn;
-      var hasComm = (inst.platformComm||0) > 0;
-      return '<tr>' +
-        '<td>'+esc(inst.name)+'</td>' +
-        '<td class="cp">'+fmt(inst.plan)+'</td>' +
-        '<td style="color:var(--text3)">'+(hasComm ? inst.platformComm+'%' : '—')+'</td>' +
-        '<td>'+(hasComm ? '<span class="ca">'+fmt(burn)+'</span>' : '<span style="color:var(--text3)">—</span>')+'</td>' +
-        '<td>'+(hasComm ? '<span class="cg">'+fmt(toKab)+'</span>' : '<span class="cg">'+fmt(inst.plan)+'</span>')+'</td>' +
-      '</tr>';
-    }).join('') || '<tr><td colspan="5" style="color:var(--text3);text-align:center;padding:16px">Нет инструментов с бюджетом</td></tr>';
-
-    var totalPlan = insts.reduce(function(s,i){return s+i.plan;},0);
-    var totalBurn = insts.reduce(function(s,i){return s+Math.round(i.plan*(i.platformComm||0)/100);},0);
-
-    // When honorar is hidden, client sees received as their budget (no deduction visible)
-    var displayBudget = showHonor ? c.adBudget : p.received;
-    var remaining = displayBudget - c.plan;
-
-    var sumRows =
-      '<div class="mp-sum-row"><span class="mp-sum-lbl">Получено от клиента</span><span class="mp-sum-val cg">'+fmt(p.received)+'</span></div>';
-    if (showHonor && c.honorarAmt > 0) {
-      sumRows += '<div class="mp-sum-row"><span class="mp-sum-lbl">Гонорар</span><span class="mp-sum-val ca">'+fmt(c.honorarAmt)+'</span></div>';
-    }
-    sumRows +=
-      '<div class="mp-sum-row"><span class="mp-sum-lbl">Бюджет клиента</span><span class="mp-sum-val cp">'+fmt(displayBudget)+'</span></div>' +
-      '<div class="mp-sum-row"><span class="mp-sum-lbl">Нераспределённый остаток</span><span class="mp-sum-val '+(remaining>=0?'ca':'cr')+'">'+fmt(remaining)+'</span></div>';
-
-    page.innerHTML =
-      '<div class="header">' +
-        '<div class="header-left">' +
-          '<div class="proj-name">'+esc(p.name)+'</div>' +
-          '<div class="proj-date">Медиаплан · '+fmtDate(p.createdAt)+'</div>' +
-        '</div>' +
-        '<button class="print-btn" onclick="window.print()">🖨 Печать</button>' +
-      '</div>' +
-      '<table class="mp-table">' +
-        '<thead><tr>' +
-          '<th>Площадка</th>' +
-          '<th>Бюджет</th>' +
-          '<th>Комиссия площадки</th>' +
-          '<th>Сумма площадки</th>' +
-          '<th>Затраты по факту</th>' +
-        '</tr></thead>' +
-        '<tbody>'+rows+'</tbody>' +
-        '<tfoot><tr>' +
-          '<td>Итого</td>' +
-          '<td>'+fmt(totalPlan)+'</td>' +
-          '<td></td>' +
-          '<td class="ca">'+fmt(totalBurn)+'</td>' +
-          '<td class="cg">'+fmt(totalPlan-totalBurn)+'</td>' +
-        '</tr></tfoot>' +
-      '</table>' +
-      '<div class="mp-summary">'+sumRows+'</div>';
-  }
+  // Try server first, fall back to localStorage on same device
+  fetch('/api/save?key=project_' + id)
+    .then(function(res){ return res.json(); })
+    .then(function(json){
+      if (json.data) {
+        renderProject(json.data);
+      } else {
+        throw new Error('not_found');
+      }
+    })
+    .catch(function(){
+      var raw = [];
+      try { raw = JSON.parse(localStorage.getItem('pm_ws_v1') || '[]'); } catch(e) {}
+      var p = raw.find(function(x){ return x.id === id; });
+      if (p) {
+        renderProject(p);
+      } else {
+        page.innerHTML = '<div class="error">Медиаплан не найден.<br>Попробуйте сформировать ссылку заново через кнопку «Поделиться».</div>';
+      }
+    });
 }
 </script>
 </body>
