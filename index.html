@@ -507,12 +507,12 @@ function projCard(p) {
 
 function statsHtml(p, c) {
   return ps('Получено',          fmt(p.received),  'cg') +
-    ps('Итого факт',             fmt(c.fact),      'cp') +
+    ps('Наш гонорар',            fmt(c.honorarAmt),'ca') +
     ps('К расходу',              fmt(c.adBudget),  'cp') +
     ps('Комиссия площадки',      fmt(c.totalBurn), 'cr') +
     '<div class="ps accent"><div class="ps-lbl">На рекламу</div><div class="ps-val">'+fmt(c.realAd)+'</div></div>' +
     ps('Итого план',             fmt(c.plan),      'cp') +
-    ps('Наш гонорар',            fmt(c.honorarAmt),'ca') +
+    ps('Итого факт',             fmt(c.fact),      'cp') +
     ps('Остаток',                fmt(c.remaining), c.remaining<0?'cr':'cg') +
     ps('Долг клиента',           c.debt>0?fmt(c.debt):'—', c.debt>0?'cr':'');
 }
