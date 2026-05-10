@@ -209,6 +209,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .mp-share-btn:hover{color:var(--text);border-color:var(--border)}
 .mp-copied{color:var(--green);font-size:11px;margin-left:8px;opacity:0;transition:opacity .3s}
 .mp-copied.show{opacity:1}
+.mp-comm-inp{background:var(--bg4);border:.5px solid var(--border2);border-radius:5px;padding:3px 6px;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;width:60px;text-align:right;outline:none;transition:border-color .15s}
+.mp-comm-inp:focus{border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -1043,7 +1045,7 @@ function renderMediaplanTable() {
     return '<tr>' +
       '<td>'+esc(inst.name)+'</td>' +
       '<td class="cp">'+fmt(inst.plan)+'</td>' +
-      '<td style="color:var(--text3)">'+(hasComm ? inst.platformComm+'%' : '—')+'</td>' +
+      '<td><input class="mp-comm-inp" type="number" value="'+(inst.platformComm||0)+'" min="0" max="100" onchange="mpUpdateComm(\''+inst.id+'\',this.value)" /></td>' +
       '<td>'+(hasComm ? '<span class="ca">'+fmt(burn)+'</span>' : '<span style="color:var(--text3)">—</span>')+'</td>' +
       '<td>'+(hasComm ? '<span class="cg">'+fmt(toKab)+'</span>' : '<span class="cg">'+fmt(inst.plan)+'</span>')+'</td>' +
     '</tr>';
@@ -1055,7 +1057,7 @@ function renderMediaplanTable() {
   document.getElementById('mp-table-wrap').innerHTML =
     '<table class="mp-table">' +
       '<thead><tr>' +
-        '<th>Площадка</th><th>Бюджет</th><th>Комиссия</th><th>Сгорит</th><th>Лимит в кабинете</th>' +
+        '<th>Площадка</th><th>Бюджет</th><th>Комиссия площадки</th><th>Сумма площадки</th><th>Затраты по факту</th>' +
       '</tr></thead>' +
       '<tbody>'+rows+'</tbody>' +
       '<tfoot><tr>' +
@@ -1067,22 +1069,42 @@ function renderMediaplanTable() {
       '</tr></tfoot>' +
     '</table>';
 
-  var remaining = c.adBudget - c.plan;
+  var displayBudget = showHonorar ? c.adBudget : p.received;
+  var remaining = displayBudget - c.plan;
   var sumRows =
     '<div class="mp-sum-row"><span class="mp-sum-lbl">Получено от клиента</span><span class="mp-sum-val cg">'+fmt(p.received)+'</span></div>';
   if (showHonorar && c.honorarAmt > 0) {
     sumRows += '<div class="mp-sum-row"><span class="mp-sum-lbl">Гонорар</span><span class="mp-sum-val ca">'+fmt(c.honorarAmt)+'</span></div>';
   }
   sumRows +=
-    '<div class="mp-sum-row"><span class="mp-sum-lbl">Бюджет клиента</span><span class="mp-sum-val cp">'+fmt(c.adBudget)+'</span></div>' +
+    '<div class="mp-sum-row"><span class="mp-sum-lbl">Бюджет клиента</span><span class="mp-sum-val cp">'+fmt(displayBudget)+'</span></div>' +
     '<div class="mp-sum-row"><span class="mp-sum-lbl">Нераспределённый остаток</span><span class="mp-sum-val '+(remaining>=0?'ca':'cr')+'">'+fmt(remaining)+'</span></div>';
   document.getElementById('mp-summary').innerHTML = '<div class="mp-summary">'+sumRows+'</div>';
 }
 
+function mpUpdateComm(instId, val) {
+  var p = state.projects.find(function(p){return p.id===mediaPlanProjId;});
+  if (!p) return;
+  var inst = p.instruments.find(function(i){return i.id===instId;});
+  if (!inst) return;
+  inst.platformComm = parseFloat(val)||0;
+  saveData();
+  renderMediaplanTable();
+  var c = calc(p);
+  var se = document.getElementById('pstats-'+p.id);
+  if (se) se.innerHTML = statsHtml(p, c);
+  var tb = document.getElementById('itbody-'+p.id);
+  if (tb) tb.innerHTML = instRows(p);
+  var tf = document.getElementById('itfoot-'+p.id);
+  if (tf) tf.innerHTML = instFootRow(p);
+  renderSummary();
+}
+
 function shareMediaplan() {
   if (!mediaPlanProjId) return;
+  var showHonor = document.getElementById('mp-show-honorar').checked ? '1' : '0';
   var base = location.href.replace(/[?#].*$/, '').replace(/index\.html$/, '');
-  var url = base + 'mediaplan.html?id=' + mediaPlanProjId;
+  var url = base + 'mediaplan.html?id=' + mediaPlanProjId + '&sh=' + showHonor;
   var copied = document.getElementById('mp-copied');
   if (navigator.clipboard) {
     navigator.clipboard.writeText(url).then(function(){

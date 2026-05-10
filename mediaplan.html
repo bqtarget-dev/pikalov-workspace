@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Медиаплан — PIKALOV MEDIA</title>
+<title>Медиаплан</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -13,8 +13,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 
 .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:30px;flex-wrap:wrap;gap:14px}
 .header-left{}
-.logo{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.14em;color:var(--text3);margin-bottom:8px}
-.logo em{color:var(--accent);font-style:normal}
 .proj-name{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.05em;margin-bottom:5px}
 .proj-date{font-size:11px;color:var(--text3)}
 .print-btn{background:var(--bg3);color:var(--text2);border:.5px solid var(--border2);border-radius:8px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s;flex-shrink:0;align-self:flex-start}
@@ -51,7 +49,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 </head>
 <body>
 <div class="page" id="page">
-  <div class="error" id="loading">Загрузка...</div>
+  <div class="error">Загрузка...</div>
 </div>
 <script>
 function fmt(n) { return Number(n||0).toLocaleString('ru') + ' ₽'; }
@@ -76,11 +74,12 @@ function calc(p) {
   var totalBurn = insts.reduce(function(s,i){return s+Math.round(i.plan*(i.platformComm||0)/100);},0);
   var realAd    = adBudget - totalBurn;
   var remaining = adBudget - plan;
-  return { plan:plan, honorarAmt:h.amt, honorarPct:h.pct, adBudget:adBudget, totalBurn:totalBurn, realAd:realAd, remaining:remaining };
+  return { plan:plan, honorarAmt:h.amt, adBudget:adBudget, totalBurn:totalBurn, realAd:realAd, remaining:remaining };
 }
 
 var params = new URLSearchParams(location.search);
 var id = params.get('id');
+var showHonor = params.get('sh') !== '0';
 var page = document.getElementById('page');
 
 if (!id) {
@@ -111,21 +110,23 @@ if (!id) {
 
     var totalPlan = insts.reduce(function(s,i){return s+i.plan;},0);
     var totalBurn = insts.reduce(function(s,i){return s+Math.round(i.plan*(i.platformComm||0)/100);},0);
-    var remaining = c.adBudget - c.plan;
+
+    // When honorar is hidden, client sees received as their budget (no deduction visible)
+    var displayBudget = showHonor ? c.adBudget : p.received;
+    var remaining = displayBudget - c.plan;
 
     var sumRows =
       '<div class="mp-sum-row"><span class="mp-sum-lbl">Получено от клиента</span><span class="mp-sum-val cg">'+fmt(p.received)+'</span></div>';
-    if (c.honorarAmt > 0) {
+    if (showHonor && c.honorarAmt > 0) {
       sumRows += '<div class="mp-sum-row"><span class="mp-sum-lbl">Гонорар</span><span class="mp-sum-val ca">'+fmt(c.honorarAmt)+'</span></div>';
     }
     sumRows +=
-      '<div class="mp-sum-row"><span class="mp-sum-lbl">Бюджет клиента</span><span class="mp-sum-val cp">'+fmt(c.adBudget)+'</span></div>' +
+      '<div class="mp-sum-row"><span class="mp-sum-lbl">Бюджет клиента</span><span class="mp-sum-val cp">'+fmt(displayBudget)+'</span></div>' +
       '<div class="mp-sum-row"><span class="mp-sum-lbl">Нераспределённый остаток</span><span class="mp-sum-val '+(remaining>=0?'ca':'cr')+'">'+fmt(remaining)+'</span></div>';
 
     page.innerHTML =
       '<div class="header">' +
         '<div class="header-left">' +
-          '<div class="logo">PIKALOV <em>MEDIA</em></div>' +
           '<div class="proj-name">'+esc(p.name)+'</div>' +
           '<div class="proj-date">Медиаплан · '+fmtDate(p.createdAt)+'</div>' +
         '</div>' +
@@ -135,9 +136,9 @@ if (!id) {
         '<thead><tr>' +
           '<th>Площадка</th>' +
           '<th>Бюджет</th>' +
-          '<th>Комиссия</th>' +
-          '<th>Сгорит</th>' +
-          '<th>Лимит в кабинете</th>' +
+          '<th>Комиссия площадки</th>' +
+          '<th>Сумма площадки</th>' +
+          '<th>Затраты по факту</th>' +
         '</tr></thead>' +
         '<tbody>'+rows+'</tbody>' +
         '<tfoot><tr>' +
