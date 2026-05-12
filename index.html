@@ -16,9 +16,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .logo em{color:var(--accent);font-style:normal}
 .logo-tag{font-size:10px;color:var(--text3);letter-spacing:.08em;margin-left:8px;font-family:'DM Sans',sans-serif;vertical-align:middle}
 .nav-tabs{display:flex;gap:4px}
-.ntab{padding:7px 13px;border-radius:8px;border:.5px solid transparent;background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.ntab{padding:7px 13px;border-radius:8px;border:.5px solid transparent;background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap;pointer-events:auto}
 .ntab.active{background:var(--bg3);color:var(--text);border-color:var(--border2)}
-.ntab.soon{cursor:default;opacity:.35}
+.ntab.soon{cursor:default;opacity:.35;pointer-events:none}
 
 /* MAIN */
 .main{max-width:1020px;margin:0 auto;padding:24px}
@@ -1366,6 +1366,13 @@ function fmtRelTime(iso) {
 
 // ── RENDER TEAM ───────────────────────────────────────────────────────
 function renderTeam() {
+  try { _renderTeam(); } catch(e) {
+    var v = document.getElementById('view-team');
+    if (v) v.innerHTML = '<div class="empty" style="color:var(--red)">Ошибка загрузки раздела: '+esc(String(e))+'</div>';
+    console.error('renderTeam error:', e);
+  }
+}
+function _renderTeam() {
   var view  = document.getElementById('view-team');
   var today = new Date().toISOString().slice(0,10);
   var now   = new Date();
