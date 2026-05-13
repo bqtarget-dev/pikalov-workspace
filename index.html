@@ -1252,8 +1252,10 @@ function mpUpdateComm(instId, val) {
 }
 
 async function shareMediaplan() {
+  console.log('[share] start, mediaPlanProjId=', mediaPlanProjId);
   if (!mediaPlanProjId) return;
   var p = state.projects.find(function(x){return x.id===mediaPlanProjId;});
+  console.log('[share] project found:', !!p, p && p.name);
   if (!p) return;
   var showHonor = document.getElementById('mp-show-honorar').checked ? '1' : '0';
   var btn = document.getElementById('mp-share-btn');
@@ -1267,32 +1269,49 @@ async function shareMediaplan() {
 
   try {
     var savedBid = localStorage.getItem('jsonbin_save_id') || undefined;
+    console.log('[share] savedBid from localStorage:', savedBid);
+
+    var payload = {key: 'project_' + p.id, data: p, bid: savedBid};
+    console.log('[share] POST /api/save payload key:', payload.key, 'bid:', payload.bid);
+
     var res = await fetch('/api/save', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({key: 'project_' + p.id, data: p, bid: savedBid})
+      body: JSON.stringify(payload)
     });
+    console.log('[share] fetch response status:', res.status, res.ok);
+
     var json = await res.json();
+    console.log('[share] response json:', json);
 
     if (!json.ok) {
-      alert('Ошибка сохранения на сервер. Проверьте JSONBIN_MASTER_KEY в настройках Vercel.');
+      alert('Ошибка сохранения на сервер. Проверьте JSONBIN_MASTER_KEY в настройках Vercel.\n\nОтвет сервера: ' + JSON.stringify(json));
       return;
     }
 
-    // Persist the bin id so future saves reuse the same bin
     if (json.bin_id) localStorage.setItem('jsonbin_save_id', json.bin_id);
+    console.log('[share] bin_id saved to localStorage:', json.bin_id);
 
     var base = location.href.replace(/[?#].*$/, '').replace(/index\.html$/, '');
     var url = base + 'mediaplan.html?id=' + mediaPlanProjId + '&bid=' + json.bin_id + '&sh=' + showHonor;
+    console.log('[share] generated url:', url);
 
+    // Always show the link via prompt so it can be copied on any device
+    prompt('Ссылка на медиаплан (скопируй):', url);
+
+    // Also try clipboard
     if (navigator.clipboard) {
-      await navigator.clipboard.writeText(url);
-      copied.classList.add('show');
-      setTimeout(function(){ copied.classList.remove('show'); }, 2500);
-    } else {
-      prompt('Ссылка на медиаплан:', url);
+      try {
+        await navigator.clipboard.writeText(url);
+        console.log('[share] copied to clipboard');
+        copied.classList.add('show');
+        setTimeout(function(){ copied.classList.remove('show'); }, 2500);
+      } catch(clipErr) {
+        console.warn('[share] clipboard write failed:', clipErr.message);
+      }
     }
   } catch (e) {
+    console.error('[share] error:', e);
     alert('Не удалось сохранить данные: ' + e.message);
   } finally {
     labelNode.textContent = origText;
