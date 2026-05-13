@@ -877,7 +877,7 @@ function onHonorarFixedInput() {
 // ── PROJECT MODAL ─────────────────────────────────────────────────────
 function openProjModal(projId) {
   editingId  = projId || null;
-  limitDirty = !!projId; // for new projects, auto-limit is active
+  limitDirty = false;
   document.getElementById('modal-proj-title').textContent = projId ? 'Редактировать проект' : 'Новый проект';
 
   if (projId) {
@@ -1187,7 +1187,7 @@ function renderMediaplanTable() {
     return '<tr>' +
       '<td>'+esc(inst.name)+'</td>' +
       '<td class="cp">'+fmt(inst.plan)+'</td>' +
-      '<td><input class="mp-comm-inp" type="number" value="'+(inst.platformComm||0)+'" min="0" max="100" onchange="mpUpdateComm(\''+inst.id+'\',this.value)" /></td>' +
+      '<td><input class="mp-comm-inp" type="number" value="'+(inst.platformComm||0)+'" min="0" max="100" oninput="mpSaveComm(\''+inst.id+'\',this.value)" onchange="mpUpdateComm(\''+inst.id+'\',this.value)" /></td>' +
       '<td>'+(hasComm ? '<span class="ca">'+fmt(burn)+'</span>' : '<span style="color:var(--text3)">—</span>')+'</td>' +
       '<td>'+(hasComm ? '<span class="cg">'+fmt(toKab)+'</span>' : '<span class="cg">'+fmt(inst.plan)+'</span>')+'</td>' +
     '</tr>';
@@ -1222,6 +1222,15 @@ function renderMediaplanTable() {
     '<div class="mp-sum-row"><span class="mp-sum-lbl">Бюджет клиента</span><span class="mp-sum-val cp">'+fmt(displayBudget)+'</span></div>' +
     '<div class="mp-sum-row"><span class="mp-sum-lbl">Нераспределённый остаток</span><span class="mp-sum-val '+(remaining>=0?'ca':'cr')+'">'+fmt(remaining)+'</span></div>';
   document.getElementById('mp-summary').innerHTML = '<div class="mp-summary">'+sumRows+'</div>';
+}
+
+function mpSaveComm(instId, val) {
+  var p = state.projects.find(function(p){return p.id===mediaPlanProjId;});
+  if (!p) return;
+  var inst = p.instruments.find(function(i){return i.id===instId;});
+  if (!inst) return;
+  inst.platformComm = parseFloat(val)||0;
+  saveData();
 }
 
 function mpUpdateComm(instId, val) {
