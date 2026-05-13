@@ -281,6 +281,49 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .task-status-btn{font-size:10px;padding:3px 10px;border-radius:6px;border:.5px solid var(--border2);background:var(--bg4);color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
 .task-status-btn:hover{border-color:var(--accent);color:var(--accent2)}
 .task-status-btn.tsb-active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ── Member cards v2 ──────────────────────────────────────────────── */
+.member-cards2{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:24px}
+.member-card2{background:var(--bg2);border:.5px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s}
+.mc2-add-card{align-items:center;justify-content:center;cursor:pointer;border-style:dashed}
+.mc2-add-card:hover{border-color:var(--accent)}
+.mc2-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mc2-info{display:flex;align-items:center;gap:6px;flex:1;min-width:0;overflow:hidden}
+.mc2-name{font-size:14px;font-weight:500;white-space:nowrap}
+.mc2-role{font-size:10px;color:var(--text3);white-space:nowrap}
+.mc2-status-btn{font-size:11px;padding:4px 10px;border-radius:14px;border:none;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;flex-shrink:0;transition:opacity .15s}
+.mc2-status-btn:hover{opacity:.8}
+.mc2-online{background:rgba(62,207,142,.15);color:var(--green)}
+.mc2-away{background:rgba(245,86,86,.15);color:var(--red)}
+.mc2-tasks{display:flex;flex-direction:column;gap:3px;min-height:28px}
+.mc2-task{display:flex;align-items:center;gap:5px;font-size:12px;padding:3px 0;border-bottom:.5px solid var(--border)}
+.mc2-task:last-child{border-bottom:none}
+.mc2-task-done{opacity:.5}
+.mc2-task-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mc2-task-time{color:var(--accent2);font-size:10px;flex-shrink:0}
+.mc2-task-btn{background:transparent;border:.5px solid var(--border2);border-radius:4px;color:var(--text2);cursor:pointer;font-size:10px;padding:1px 6px;flex-shrink:0;font-family:'DM Sans',sans-serif;transition:all .15s}
+.mc2-task-btn:hover{border-color:var(--green);color:var(--green)}
+.mc2-empty{font-size:11px;color:var(--text3);padding:2px 0}
+.mc2-add{background:transparent;border:.5px solid rgba(127,110,245,.3);color:var(--accent2);border-radius:6px;padding:5px 0;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;text-align:center}
+.mc2-add:hover{background:rgba(127,110,245,.1)}
+.mc2-del{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10px;padding:0 3px;flex-shrink:0;transition:color .15s;line-height:1}
+.mc2-del:hover{color:var(--red)}
+
+/* ── Calendar ─────────────────────────────────────────────────────── */
+.cal-outer{display:flex;gap:6px;align-items:flex-start}
+.cal-day-labels{display:flex;flex-direction:column;gap:3px;padding-top:20px;flex-shrink:0;width:20px}
+.cal-day-lbl{height:12px;font-size:9px;color:var(--text3);line-height:12px}
+.cal-month-row{display:flex;gap:3px;margin-bottom:4px}
+.cal-month-cell{width:12px;font-size:9px;color:var(--text3);overflow:visible;white-space:nowrap}
+.cal-grid{display:flex;gap:3px}
+.cal-col{display:flex;flex-direction:column;gap:3px}
+.cal-cell{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.cal-cell.c0{background:var(--bg4)}
+.cal-cell.c-future{background:transparent}
+.cal-cell.c1{background:rgba(62,207,142,.28)}
+.cal-cell.c2{background:rgba(62,207,142,.6)}
+.cal-cell.c3{background:var(--green)}
+.cal-legend{display:flex;align-items:center;gap:5px;margin-top:12px;font-size:11px;color:var(--text3)}
 </style>
 </head>
 <body>
@@ -294,6 +337,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <button class="ntab active" onclick="showTab('mediaplans')">💰 Медиапланы</button>
     <button class="ntab"       onclick="showTab('analytics')">📊 Аналитика</button>
     <button class="ntab" onclick="showTab('team')">👥 Команда</button>
+    <button class="ntab" onclick="showTab('calendar')">📅 Календарь</button>
     <button class="ntab soon" title="Скоро">✅ Задачи</button>
     <button class="ntab soon" title="Скоро">🍅 Помидоро</button>
   </div>
@@ -332,6 +376,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <div id="an-chart-wrap"></div>
   </div>
   <div id="view-team" style="display:none"></div>
+  <div id="view-calendar" style="display:none"></div>
   <div id="view-tasks"   style="display:none"><div class="coming-soon"><div class="cs-icon">✅</div><div>Раздел «Задачи» — скоро</div></div></div>
   <div id="view-pomodoro"style="display:none"><div class="coming-soon"><div class="cs-icon">🍅</div><div>Раздел «Помидоро» — скоро</div></div></div>
 </div>
@@ -612,14 +657,15 @@ function fmtD(s) { return new Date(s).toLocaleDateString('ru',{day:'2-digit',mon
 // ── TABS ──────────────────────────────────────────────────────────────
 function showTab(t) {
   currentTab = t;
-  ['mediaplans','analytics','team','tasks','pomodoro'].forEach(function(k){
+  ['mediaplans','analytics','team','calendar','tasks','pomodoro'].forEach(function(k){
     document.getElementById('view-'+k).style.display = k===t?'':'none';
   });
   document.querySelectorAll('.ntab:not(.soon)').forEach(function(b,i){
-    b.classList.toggle('active', i===['mediaplans','analytics','team','tasks','pomodoro'].indexOf(t));
+    b.classList.toggle('active', i===['mediaplans','analytics','team','calendar','tasks','pomodoro'].indexOf(t));
   });
   if (t === 'analytics') renderAnalytics();
   if (t === 'team')      renderTeam();
+  if (t === 'calendar')  renderCalendar();
 }
 
 // ── FILTER ────────────────────────────────────────────────────────────
@@ -1331,27 +1377,30 @@ document.getElementById('modal-task').addEventListener('click',function(e){if(e.
 
 // ── TEAM ──────────────────────────────────────────────────────────────
 var MEMBERS = [
-  {slug:'zhenya',  name:'Женя',    role:'Владелец'},
+  {slug:'zhenya',  name:'Женя',    role:'Владелец', owner:true},
   {slug:'dana',    name:'Даня',    role:'Менеджер'},
   {slug:'lesha',   name:'Лёша',    role:'Специалист'},
   {slug:'ruslana', name:'Руслана', role:'Специалист'}
 ];
 
-var teamState    = {statuses:{}, tasks:[]};
+var teamState     = {statuses:{}, tasks:[], customMembers:[]};
 var currentMember = null;
 var editingTaskId = null;
 var taskFilter    = 'all';
 
+function getAllMembers()    { return MEMBERS.concat(teamState.customMembers || []); }
+function getBoardMembers() { return MEMBERS.filter(function(m){ return !m.owner; }).concat(teamState.customMembers || []); }
+function getMemberObj(slug) { return getAllMembers().find(function(m){ return m.slug===slug; }); }
+function getMemberName(slug){ var m=getMemberObj(slug); return m?m.name:(slug||'—'); }
+
 function loadTeamData() {
-  try {
-    var d = localStorage.getItem('pm_team_v1');
-    if (d) teamState = JSON.parse(d);
-  } catch(e) {}
-  if (!teamState.statuses) teamState.statuses = {};
-  if (!teamState.tasks)    teamState.tasks    = [];
-  MEMBERS.forEach(function(m) {
+  try { var d=localStorage.getItem('pm_team_v1'); if(d) teamState=JSON.parse(d); } catch(e){}
+  if (!teamState.statuses)      teamState.statuses      = {};
+  if (!teamState.tasks)         teamState.tasks         = [];
+  if (!teamState.customMembers) teamState.customMembers = [];
+  getAllMembers().forEach(function(m){
     if (!teamState.statuses[m.slug])
-      teamState.statuses[m.slug] = {status:'online', comment:'', updatedAt: new Date().toISOString()};
+      teamState.statuses[m.slug] = {status:'online', updatedAt:new Date().toISOString()};
   });
 }
 
@@ -1359,235 +1408,212 @@ function saveTeamData() { localStorage.setItem('pm_team_v1', JSON.stringify(team
 
 function initMember() {
   var p = new URLSearchParams(location.search).get('member');
-  currentMember = MEMBERS.find(function(m){ return m.slug === p; }) ? p : null;
+  currentMember = getAllMembers().find(function(m){ return m.slug===p; }) ? p : null;
 }
 
-function getMemberObj(slug) { return MEMBERS.find(function(m){ return m.slug === slug; }); }
-function getMemberName(slug) { var m = getMemberObj(slug); return m ? m.name : (slug || '—'); }
-
-function isOwner() { return !currentMember || currentMember === 'zhenya'; }
-function canEdit(slug) { return !currentMember || currentMember === slug || currentMember === 'zhenya'; }
+function isOwner()     { return !currentMember || currentMember==='zhenya'; }
+function canEdit(slug) { return !currentMember || currentMember===slug || currentMember==='zhenya'; }
 
 function toggleMemberStatus(slug) {
-  if (!canEdit(slug)) return;
+  if (!teamState.statuses[slug]) teamState.statuses[slug]={status:'online',updatedAt:''};
   var st = teamState.statuses[slug];
-  st.status    = st.status === 'online' ? 'away' : 'online';
+  st.status    = st.status==='online' ? 'away' : 'online';
   st.updatedAt = new Date().toISOString();
-  saveTeamData();
-  renderTeam();
+  saveTeamData(); renderTeam();
 }
 
-function updateMemberComment(slug, val) {
-  if (!canEdit(slug)) return;
-  teamState.statuses[slug].comment   = val;
-  teamState.statuses[slug].updatedAt = new Date().toISOString();
-  saveTeamData();
+function addCustomMember() {
+  var name = prompt('Имя участника:');
+  if (!name || !name.trim()) return;
+  var role = prompt('Роль (например: Дизайнер):') || 'Специалист';
+  var slug = 'cm'+Date.now();
+  teamState.customMembers.push({slug:slug, name:name.trim(), role:role.trim(), custom:true});
+  teamState.statuses[slug] = {status:'online', updatedAt:new Date().toISOString()};
+  saveTeamData(); renderTeam();
 }
 
-function fmtRelTime(iso) {
-  var diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60)    return 'только что';
-  if (diff < 3600)  return Math.floor(diff/60)+' мин назад';
-  if (diff < 86400) return Math.floor(diff/3600)+' ч назад';
-  return Math.floor(diff/86400)+' д назад';
+function removeCustomMember(slug) {
+  if (!confirm('Удалить участника?')) return;
+  teamState.customMembers = teamState.customMembers.filter(function(m){ return m.slug!==slug; });
+  saveTeamData(); renderTeam();
 }
 
 // ── RENDER TEAM ───────────────────────────────────────────────────────
 function renderTeam() {
   try { _renderTeam(); } catch(e) {
-    var v = document.getElementById('view-team');
-    if (v) v.innerHTML = '<div class="empty" style="color:var(--red)">Ошибка загрузки раздела: '+esc(String(e))+'</div>';
-    console.error('renderTeam error:', e);
+    var v=document.getElementById('view-team');
+    if(v) v.innerHTML='<div class="empty" style="color:var(--red)">Ошибка: '+esc(String(e))+'</div>';
+    console.error('renderTeam error:',e);
   }
 }
+
 function _renderTeam() {
   var view  = document.getElementById('view-team');
   var today = new Date().toISOString().slice(0,10);
-  var now   = new Date();
-  var nowH  = now.getHours() + now.getMinutes()/60;
+  var board = getBoardMembers();
 
-  // tasks for plan-for-day block (my tasks due today)
-  var myTodayTasks = teamState.tasks.filter(function(t) {
-    var assigneeOk = currentMember ? t.assignee === currentMember : true;
-    return assigneeOk && (t.deadline||'').slice(0,10) === today;
-  });
+  // ── Member cards ──────────────────────────────────────────────────
+  var cardsHtml = board.map(function(m) {
+    var st     = teamState.statuses[m.slug] || {status:'online'};
+    var online = st.status === 'online';
 
-  var goal     = 6;
-  var cnt      = myTodayTasks.length;
-  var goalMet  = cnt >= goal;
-  var planStatus;
-  if (goalMet)       planStatus = '<div class="plan-goal-met">🎉 Отлично! '+cnt+' задач на сегодня</div>';
-  else if (nowH>=10) planStatus = '<div class="plan-goal-fail">⚠️ Только '+cnt+' из '+goal+' задач поставлено до 10:00</div>';
-  else               planStatus = '<div class="plan-goal-pending">До 10:00 нужно ещё '+(goal-cnt)+' задач</div>';
+    var todayTasks = teamState.tasks.filter(function(t){
+      return t.assignee===m.slug && (t.deadline||'').slice(0,10)===today;
+    });
 
-  var planTasksHtml = myTodayTasks.length
-    ? myTodayTasks.map(function(t) {
-        var priEmoji = {high:'🔴',medium:'🟡',low:'🟢'}[t.priority]||'';
-        var sLbl     = {new:'Новая',inprogress:'В работе',done:'Готово'}[t.status]||'';
-        var dlTime   = t.deadline && t.deadline.length>10 ? t.deadline.slice(11,16) : '';
-        return '<div class="plan-task'+(t.status==='done'?' task-done':'')+'">' +
-          '<span class="plan-task-pri">'+priEmoji+'</span>' +
-          '<span class="plan-task-title">'+(t.status==='done'?'<s>':'')+esc(t.title)+(t.status==='done'?'</s>':'')+'</span>' +
-          (dlTime?'<span class="plan-task-time">'+dlTime+'</span>':'') +
-          '<span class="plan-task-status">'+sLbl+'</span>' +
-          (canEdit(t.assignee) ? '<button class="plan-task-done" onclick="cyclePlanTask(\''+t.id+'\')">'+(t.status==='done'?'↩':'✓')+'</button>' : '') +
-        '</div>';
-      }).join('')
-    : '<div style="color:var(--text3);font-size:13px;padding:6px 0">Нет задач на сегодня</div>';
+    var taskRows = todayTasks.length
+      ? todayTasks.map(function(t){
+          var pri  = {high:'🔴',medium:'🟡',low:'🟢'}[t.priority]||'';
+          var time = t.deadline&&t.deadline.length>10 ? t.deadline.slice(11,16) : '';
+          var done = t.status==='done';
+          return '<div class="mc2-task'+(done?' mc2-task-done':'')+'">' +
+            '<span>'+pri+'</span>' +
+            '<span class="mc2-task-title">'+(done?'<s>':'')+esc(t.title)+(done?'</s>':'')+'</span>' +
+            (time?'<span class="mc2-task-time">'+time+'</span>':'') +
+            '<button class="mc2-task-btn" onclick="cyclePlanTask(\''+t.id+'\')">'+(done?'↩':'✓')+'</button>' +
+          '</div>';
+        }).join('')
+      : '<div class="mc2-empty">Нет задач на сегодня</div>';
 
-  var memberLabel = currentMember ? getMemberName(currentMember) : 'Команда';
-  var planHtml = '<div class="plan-block">' +
-    '<div class="plan-header">' +
-      '<div class="plan-title">ПЛАН НА ДЕНЬ'+(currentMember?' — '+memberLabel:'')+'</div>' +
-      '<div class="plan-date">'+now.toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'})+'</div>' +
-    '</div>' +
-    '<div class="plan-goal">' + planStatus +
-      '<div class="plan-progress-bar"><div class="plan-progress-fill" style="width:'+Math.min(100,cnt/goal*100)+'%"></div></div>' +
-      '<div style="font-size:10px;color:var(--text3);margin-top:4px">'+cnt+' / '+goal+' задач</div>' +
-    '</div>' +
-    '<div class="plan-tasks">'+planTasksHtml+'</div>' +
-  '</div>';
+    var delBtn = m.custom
+      ? '<button class="mc2-del" onclick="removeCustomMember(\''+m.slug+'\')" title="Удалить">✕</button>'
+      : '';
 
-  // member status cards
-  var cardsHtml = '<div class="team-section-title"><span>СТАТУСЫ КОМАНДЫ</span></div>' +
-    '<div class="member-cards">' +
-    MEMBERS.map(function(m) {
-      var st       = teamState.statuses[m.slug] || {status:'online',comment:'',updatedAt:''};
-      var online   = st.status === 'online';
-      var editable = canEdit(m.slug);
-      var relTime  = st.updatedAt ? fmtRelTime(st.updatedAt) : '';
-      return '<div class="member-card '+(online?'mc-online':'mc-away')+'">' +
-        '<div class="mc-top">' +
-          '<div class="mc-info"><div class="mc-name">'+esc(m.name)+'</div><div class="mc-role">'+esc(m.role)+'</div></div>' +
-          '<div class="mc-status-dot">'+(online?'🟢':'🔴')+'</div>' +
+    return '<div class="member-card2">' +
+      '<div class="mc2-header">' +
+        '<div class="mc2-info">'+delBtn+
+          '<span class="mc2-name">'+esc(m.name)+'</span>' +
+          '<span class="mc2-role">'+esc(m.role)+'</span>' +
         '</div>' +
-        '<div class="mc-status-lbl">'+(online?'На месте':'Отошёл')+'</div>' +
-        (relTime?'<div class="mc-time">'+relTime+'</div>':'') +
-        '<input type="text" class="mc-comment-inp" value="'+esc(st.comment)+'" placeholder="Комментарий..." '+
-          (editable?'':'disabled ')+
-          'onchange="updateMemberComment(\''+m.slug+'\',this.value)" onblur="updateMemberComment(\''+m.slug+'\',this.value)" />' +
-        (editable
-          ? '<button class="mc-toggle-btn '+(online?'mc-btn-away':'mc-btn-online')+'" onclick="toggleMemberStatus(\''+m.slug+'\')">'+
-              (online?'🔴 Отошёл':'🟢 На месте')+'</button>'
-          : '<div class="mc-toggle-btn mc-btn-disabled">'+(online?'🟢 На месте':'🔴 Отошёл')+'</div>'
-        ) +
-      '</div>';
-    }).join('') +
+        '<button class="mc2-status-btn '+(online?'mc2-online':'mc2-away')+'" onclick="toggleMemberStatus(\''+m.slug+'\')">' +
+          (online?'🟢 На месте':'🔴 Отошёл')+'</button>' +
+      '</div>' +
+      '<div class="mc2-tasks">'+taskRows+'</div>' +
+      '<button class="mc2-add" onclick="openTaskModalFor(\''+m.slug+'\')">+ Задача ему</button>' +
+    '</div>';
+  }).join('');
+
+  var cardsSection =
+    '<div class="team-section-title"><span>КОМАНДА</span></div>' +
+    '<div class="member-cards2">'+cardsHtml+
+      '<div class="member-card2 mc2-add-card" onclick="addCustomMember()">' +
+        '<div style="font-size:28px;margin-bottom:6px;color:var(--accent2)">+</div>' +
+        '<div style="font-size:12px;color:var(--text3)">Добавить участника</div>' +
+      '</div>' +
     '</div>';
 
-  // task list (filtered by member if not owner)
-  var visTasks = currentMember && !isOwner()
-    ? teamState.tasks.filter(function(t){ return t.assignee===currentMember||t.assigner===currentMember; })
-    : teamState.tasks;
-  visTasks = visTasks.slice().sort(function(a,b){
-    if (a.deadline && b.deadline) { if(a.deadline<b.deadline)return -1; if(a.deadline>b.deadline)return 1; }
-    else if (a.deadline) return -1;
-    else if (b.deadline) return 1;
-    var o={high:0,medium:1,low:2};
-    return (o[a.priority]||1)-(o[b.priority]||1);
+  // ── Task list ─────────────────────────────────────────────────────
+  var sorted = teamState.tasks.slice().sort(function(a,b){
+    if (a.deadline&&b.deadline){if(a.deadline<b.deadline)return -1;if(a.deadline>b.deadline)return 1;}
+    else if(a.deadline)return -1; else if(b.deadline)return 1;
+    return ({high:0,medium:1,low:2}[a.priority]||1)-({high:0,medium:1,low:2}[b.priority]||1);
   });
+  var shown = taskFilter==='all' ? sorted : sorted.filter(function(t){return t.status===taskFilter;});
 
-  var tasksHtml = '<div class="team-section-title" style="margin-top:24px">' +
-    '<span>ЗАДАЧИ</span>' +
-    '<button class="add-btn" onclick="openTaskModal()" style="font-size:12px;padding:6px 14px">+ Новая задача</button>' +
-  '</div>' +
-  '<div class="task-filters" id="task-filters">' +
-    '<button class="ftab'+(taskFilter==='all'?' active':'')+'" id="tf-all"        onclick="setTaskFilter(\'all\')">Все</button>' +
-    '<button class="ftab'+(taskFilter==='new'?' active':'')+'" id="tf-new"        onclick="setTaskFilter(\'new\')">Новые</button>' +
-    '<button class="ftab'+(taskFilter==='inprogress'?' active':'')+'" id="tf-inprogress" onclick="setTaskFilter(\'inprogress\')">В работе</button>' +
-    '<button class="ftab'+(taskFilter==='done'?' active':'')+'" id="tf-done"      onclick="setTaskFilter(\'done\')">Готово</button>' +
-  '</div>' +
-  '<div id="task-list">' + renderTaskList(taskFilter==='all'?visTasks:visTasks.filter(function(t){return t.status===taskFilter;})) + '</div>';
+  var tasksSection =
+    '<div class="team-section-title" style="margin-top:28px">' +
+      '<span>ВСЕ ЗАДАЧИ</span>' +
+      '<button class="add-btn" onclick="openTaskModal()" style="font-size:12px;padding:6px 14px">+ Новая задача</button>' +
+    '</div>' +
+    '<div class="task-filters">' +
+      ['all','new','inprogress','done'].map(function(f){
+        return '<button class="ftab'+(taskFilter===f?' active':'')+'" onclick="setTaskFilter(\''+f+'\')">'+
+          {all:'Все',new:'Новые',inprogress:'В работе',done:'Готово'}[f]+'</button>';
+      }).join('') +
+    '</div>' +
+    '<div id="task-list">'+renderTaskList(shown)+'</div>';
 
-  view.innerHTML = planHtml + cardsHtml + tasksHtml;
+  view.innerHTML = cardsSection + tasksSection;
 }
 
 function setTaskFilter(f) {
   taskFilter = f;
-  ['all','new','inprogress','done'].forEach(function(k){
-    var el = document.getElementById('tf-'+k);
-    if (el) el.classList.toggle('active', k===f);
+  var sorted = teamState.tasks.slice().sort(function(a,b){
+    if (a.deadline&&b.deadline){if(a.deadline<b.deadline)return -1;if(a.deadline>b.deadline)return 1;}
+    else if(a.deadline)return -1; else if(b.deadline)return 1;
+    return ({high:0,medium:1,low:2}[a.priority]||1)-({high:0,medium:1,low:2}[b.priority]||1);
   });
-  var me = currentMember;
-  var vis = me && !isOwner()
-    ? teamState.tasks.filter(function(t){ return t.assignee===me||t.assigner===me; })
-    : teamState.tasks;
-  var filtered = f==='all' ? vis : vis.filter(function(t){ return t.status===f; });
+  var shown = f==='all' ? sorted : sorted.filter(function(t){return t.status===f;});
+  document.querySelectorAll('.task-filters .ftab').forEach(function(btn,i){
+    btn.classList.toggle('active',['all','new','inprogress','done'][i]===f);
+  });
   var tl = document.getElementById('task-list');
-  if (tl) tl.innerHTML = renderTaskList(filtered);
+  if (tl) tl.innerHTML = renderTaskList(shown);
 }
 
 function renderTaskList(tasks) {
-  if (!tasks || !tasks.length) return '<div class="empty">Нет задач</div>';
+  if (!tasks||!tasks.length) return '<div class="empty">Нет задач</div>';
   var today = new Date().toISOString().slice(0,10);
   var nowMs = Date.now();
-  return tasks.map(function(t) {
-    var priEmoji  = {high:'🔴',medium:'🟡',low:'🟢'}[t.priority]||'';
-    var sLbl      = {new:'Новая',inprogress:'В работе',done:'Готово'}[t.status]||'';
-    var sCls      = {new:'ts-new',inprogress:'ts-inprogress',done:'ts-done'}[t.status]||'';
-    var dlStr     = t.deadline ? new Date(t.deadline).toLocaleString('ru',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
-    var isToday   = (t.deadline||'').slice(0,10)===today;
-    var isOverdue = t.deadline && new Date(t.deadline).getTime() < nowMs && t.status!=='done';
-    var repeatStr = t.repeat ? '🔁 '+( t.reminderTime||'' ) : '';
-    var editable  = canEdit(t.assignee) || canEdit(t.assigner);
-    var rowCls    = 'task-row'+(t.status==='done'?' task-row-done':'')+(isOverdue?' task-overdue':(isToday&&t.status!=='done'?' task-today':''));
-
+  return tasks.map(function(t){
+    var pri    = {high:'🔴',medium:'🟡',low:'🟢'}[t.priority]||'';
+    var sLbl   = {new:'Новая',inprogress:'В работе',done:'Готово'}[t.status]||'';
+    var sCls   = {new:'ts-new',inprogress:'ts-inprogress',done:'ts-done'}[t.status]||'';
+    var dlStr  = t.deadline ? new Date(t.deadline).toLocaleString('ru',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+    var today_ = (t.deadline||'').slice(0,10)===today;
+    var over   = t.deadline&&new Date(t.deadline).getTime()<nowMs&&t.status!=='done';
+    var rowCls = 'task-row'+(t.status==='done'?' task-row-done':'')+(over?' task-overdue':(today_&&t.status!=='done'?' task-today':''));
     return '<div class="'+rowCls+'">' +
       '<div class="task-row-main">' +
         '<div class="task-row-left">' +
-          '<span class="task-pri-badge">'+priEmoji+'</span>' +
+          '<span class="task-pri-badge">'+pri+'</span>' +
           '<span class="task-title">'+(t.status==='done'?'<s>':'')+esc(t.title)+(t.status==='done'?'</s>':'')+'</span>' +
         '</div>' +
         '<div class="task-row-right">' +
           '<span class="task-badge '+sCls+'">'+sLbl+'</span>' +
-          (editable?'<button class="act a-edit" onclick="openTaskModal(\''+t.id+'\')" style="font-size:10px;padding:3px 8px">✎</button>':'') +
-          (editable?'<button class="act a-del"  onclick="deleteTask(\''+t.id+'\')"   style="font-size:10px;padding:3px 8px">✕</button>':'') +
+          '<button class="act a-edit" onclick="openTaskModal(\''+t.id+'\')" style="font-size:10px;padding:3px 8px">✎</button>' +
+          '<button class="act a-del"  onclick="deleteTask(\''+t.id+'\')"   style="font-size:10px;padding:3px 8px">✕</button>' +
         '</div>' +
       '</div>' +
       '<div class="task-row-meta">' +
         '<span class="task-meta-item">👤 '+esc(getMemberName(t.assignee))+'</span>' +
-        '<span class="task-meta-item">↳ от '+esc(getMemberName(t.assigner))+'</span>' +
-        '<span class="task-meta-item'+(isOverdue?' cr':(isToday&&t.status!=='done'?' ca':''))+'">🗓 '+dlStr+'</span>' +
-        (repeatStr?'<span class="task-meta-item">'+repeatStr+'</span>':'') +
+        '<span class="task-meta-item">↳ '+esc(getMemberName(t.assigner))+'</span>' +
+        '<span class="task-meta-item'+(over?' cr':(today_&&t.status!=='done'?' ca':''))+'">🗓 '+dlStr+'</span>' +
         (t.comment?'<span class="task-meta-item" style="color:var(--text3)">💬 '+esc(t.comment)+'</span>':'') +
       '</div>' +
-      (editable?'<div class="task-status-btns">' +
+      '<div class="task-status-btns">' +
         ['new','inprogress','done'].map(function(s){
-          var lbl={new:'Новая',inprogress:'В работе',done:'Готово'}[s];
-          return '<button class="task-status-btn'+(t.status===s?' tsb-active':'')+'" onclick="setTaskStatus(\''+t.id+'\',\''+s+'\')">'+lbl+'</button>';
+          return '<button class="task-status-btn'+(t.status===s?' tsb-active':'')+
+            '" onclick="setTaskStatus(\''+t.id+'\',\''+s+'\')">'+
+            {new:'Новая',inprogress:'В работе',done:'Готово'}[s]+'</button>';
         }).join('')+
-      '</div>':'') +
+      '</div>'+
     '</div>';
   }).join('');
 }
 
 function cyclePlanTask(id) {
-  var t = teamState.tasks.find(function(x){ return x.id===id; });
-  if (!t) return;
-  t.status = {new:'inprogress',inprogress:'done',done:'new'}[t.status]||'new';
+  var t=teamState.tasks.find(function(x){return x.id===id;});
+  if(!t)return;
+  t.status={new:'inprogress',inprogress:'done',done:'new'}[t.status]||'new';
   saveTeamData(); renderTeam();
 }
-
-function setTaskStatus(id, status) {
-  var t = teamState.tasks.find(function(x){ return x.id===id; });
-  if (!t) return;
-  t.status = status;
-  saveTeamData(); renderTeam();
+function setTaskStatus(id,status) {
+  var t=teamState.tasks.find(function(x){return x.id===id;});
+  if(!t)return; t.status=status; saveTeamData(); renderTeam();
 }
-
 function deleteTask(id) {
-  if (!confirm('Удалить задачу?')) return;
-  teamState.tasks = teamState.tasks.filter(function(x){ return x.id!==id; });
+  if(!confirm('Удалить задачу?'))return;
+  teamState.tasks=teamState.tasks.filter(function(x){return x.id!==id;});
   saveTeamData(); renderTeam();
 }
 
 // ── TASK MODAL ────────────────────────────────────────────────────────
-function openTaskModal(taskId) {
+function openTaskModalFor(slug) { openTaskModal(null, slug); }
+
+function openTaskModal(taskId, forSlug) {
   editingTaskId = taskId || null;
   document.getElementById('modal-task-title').textContent = taskId ? 'Редактировать задачу' : 'Новая задача';
+
+  var opts = getAllMembers().map(function(m){
+    return '<option value="'+m.slug+'">'+esc(m.name)+'</option>';
+  }).join('');
+  document.getElementById('t-assignee').innerHTML = opts;
+  document.getElementById('t-assigner').innerHTML = opts;
+
   if (taskId) {
-    var t = teamState.tasks.find(function(x){ return x.id===taskId; });
-    if (!t) return;
+    var t=teamState.tasks.find(function(x){return x.id===taskId;});
+    if(!t)return;
     document.getElementById('t-title').value    = t.title;
     document.getElementById('t-assignee').value = t.assignee;
     document.getElementById('t-assigner').value = t.assigner;
@@ -1600,9 +1626,9 @@ function openTaskModal(taskId) {
     document.getElementById('t-reminder-row').style.display = t.repeat?'':'none';
   } else {
     document.getElementById('t-title').value    = '';
-    document.getElementById('t-assignee').value = currentMember||'zhenya';
+    document.getElementById('t-assignee').value = forSlug||currentMember||'zhenya';
     document.getElementById('t-assigner').value = currentMember||'zhenya';
-    var dl = new Date(); dl.setMinutes(0,0,0);
+    var dl=new Date(); dl.setMinutes(0,0,0);
     document.getElementById('t-deadline').value = dl.toISOString().slice(0,16);
     document.getElementById('t-priority').value = 'medium';
     document.getElementById('t-comment').value  = '';
@@ -1612,7 +1638,7 @@ function openTaskModal(taskId) {
     document.getElementById('t-reminder-row').style.display = 'none';
   }
   document.getElementById('modal-task').classList.add('open');
-  setTimeout(function(){ document.getElementById('t-title').focus(); }, 60);
+  setTimeout(function(){document.getElementById('t-title').focus();},60);
 }
 
 function closeTaskModal() {
@@ -1621,9 +1647,9 @@ function closeTaskModal() {
 }
 
 function saveTask() {
-  var title = document.getElementById('t-title').value.trim();
-  if (!title) { flash('t-title'); return; }
-  var data = {
+  var title=document.getElementById('t-title').value.trim();
+  if(!title){flash('t-title');return;}
+  var data={
     title:        title,
     assignee:     document.getElementById('t-assignee').value,
     assigner:     document.getElementById('t-assigner').value,
@@ -1634,15 +1660,95 @@ function saveTask() {
     repeat:       document.getElementById('t-repeat').checked,
     reminderTime: document.getElementById('t-reminder').value
   };
-  if (editingTaskId) {
-    var t = teamState.tasks.find(function(x){ return x.id===editingTaskId; });
-    if (t) Object.assign(t, data);
+  if(editingTaskId){
+    var t=teamState.tasks.find(function(x){return x.id===editingTaskId;});
+    if(t)Object.assign(t,data);
   } else {
-    data.id        = 'tk'+Date.now();
-    data.createdAt = new Date().toISOString();
+    data.id='tk'+Date.now(); data.createdAt=new Date().toISOString();
     teamState.tasks.unshift(data);
   }
   saveTeamData(); closeTaskModal(); renderTeam();
+}
+
+// ── CALENDAR ──────────────────────────────────────────────────────────
+function renderCalendar() {
+  var view = document.getElementById('view-calendar');
+  if (!view) return;
+
+  var byDay = {};
+  teamState.tasks.forEach(function(t){
+    if (t.status==='done'&&t.deadline){
+      var d=t.deadline.slice(0,10); byDay[d]=(byDay[d]||0)+1;
+    }
+  });
+
+  var today    = new Date();
+  var todayStr = today.toISOString().slice(0,10);
+
+  // Monday of the week 12 full weeks ago
+  var start = new Date(today);
+  start.setDate(start.getDate() - ((start.getDay()+6)%7) - 12*7);
+
+  var RU_M = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+  var RU_D = ['Пн','','Ср','','Пт','',''];
+
+  var weeks = [];
+  for (var w=0;w<13;w++){
+    var col=[];
+    for (var d=0;d<7;d++){
+      var date=new Date(start.getTime()+(w*7+d)*86400000);
+      var key=date.toISOString().slice(0,10);
+      var cnt=byDay[key]||0;
+      var cls=key>todayStr?'c-future':cnt===0?'c0':cnt<=2?'c1':cnt<=4?'c2':'c3';
+      col.push({key:key,cnt:cnt,cls:cls,month:date.getMonth()});
+    }
+    weeks.push(col);
+  }
+
+  var monthRow=''; var lastM=-1;
+  weeks.forEach(function(col){
+    var m=col[0].month;
+    monthRow+='<div class="cal-month-cell">'+(m!==lastM?RU_M[m]:'')+'</div>';
+    lastM=m;
+  });
+
+  var gridCols=weeks.map(function(col){
+    return '<div class="cal-col">'+col.map(function(day){
+      return '<div class="cal-cell '+day.cls+'" title="'+day.key+(day.cnt?' · '+day.cnt+' задач завершено':'')+'"></div>';
+    }).join('')+'</div>';
+  }).join('');
+
+  var totalDone=Object.keys(byDay).reduce(function(s,k){return s+byDay[k];},0);
+  var streak=0; var sd=new Date(today);
+  for(var i=0;i<365;i++){var sk=sd.toISOString().slice(0,10);if(!byDay[sk])break;streak++;sd.setDate(sd.getDate()-1);}
+
+  function sCard(lbl,val,cls){
+    return '<div style="background:var(--bg2);border:.5px solid var(--border);border-radius:10px;padding:14px 16px">'+
+      '<div style="font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:5px">'+lbl+'</div>'+
+      '<div style="font-size:22px;font-weight:500" class="'+cls+'">'+val+'</div></div>';
+  }
+
+  view.innerHTML=
+    '<div style="padding:24px">'+
+    '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:22px;letter-spacing:.06em;margin-bottom:20px">Активность команды</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">'+
+      sCard('Завершено задач',totalDone,'cg')+
+      sCard('Серия дней',streak,'ca')+
+      sCard('Всего задач',teamState.tasks.length,'cp')+
+    '</div>'+
+    '<div style="background:var(--bg2);border:.5px solid var(--border);border-radius:12px;padding:20px;overflow-x:auto">'+
+      '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:12px">Завершённые задачи · последние 3 месяца</div>'+
+      '<div class="cal-outer">'+
+        '<div class="cal-day-labels">'+RU_D.map(function(d){return '<div class="cal-day-lbl">'+d+'</div>';}).join('')+'</div>'+
+        '<div>'+
+          '<div class="cal-month-row">'+monthRow+'</div>'+
+          '<div class="cal-grid">'+gridCols+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="cal-legend"><span>Меньше</span>'+
+        '<div class="cal-cell c0"></div><div class="cal-cell c1"></div><div class="cal-cell c2"></div><div class="cal-cell c3"></div>'+
+        '<span>Больше</span></div>'+
+    '</div></div>';
 }
 
 loadData();
