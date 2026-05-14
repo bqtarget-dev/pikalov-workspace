@@ -452,25 +452,35 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .stg-search{flex:1;min-width:180px;max-width:360px;background:var(--bg4);border:.5px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s}
 .stg-search:focus{border-color:var(--accent)}
 .stg-search::placeholder{color:var(--text3)}
-.stg-cat-bar{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px}
-.stg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-.stg-card{background:var(--bg2);border:.5px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s}
+.stg-card{background:var(--bg2);border:.5px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:7px;transition:border-color .2s}
 .stg-card:hover{border-color:var(--border2)}
-.stg-card-title{font-size:15px;font-weight:500;line-height:1.3;word-break:break-word}
+.stg-card-title{font-size:14px;font-weight:500;line-height:1.3;word-break:break-word}
 .stg-card-comment{font-size:12px;color:var(--text2);line-height:1.5;word-break:break-word}
-.stg-cat-badge{display:inline-block;font-size:10px;padding:2px 9px;border-radius:20px;border:.5px solid;white-space:nowrap}
-.stg-cat-Аудитории{color:var(--accent2);border-color:rgba(127,110,245,.3);background:rgba(127,110,245,.07)}
-.stg-cat-Таблицы{color:var(--green);border-color:rgba(62,207,142,.25);background:rgba(62,207,142,.06)}
-.stg-cat-Инструменты{color:var(--amber);border-color:rgba(245,166,35,.25);background:rgba(245,166,35,.06)}
-.stg-cat-Клиенты{color:#6eb8f5;border-color:rgba(110,184,245,.25);background:rgba(110,184,245,.06)}
-.stg-cat-Другое{color:var(--text2);border-color:var(--border2);background:var(--bg4)}
-.stg-card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:2px}
-.stg-open-btn{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:opacity .15s;white-space:nowrap}
+.stg-cat-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;border:.5px solid;white-space:nowrap}
+.stg-card-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.stg-open-btn{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;transition:opacity .15s;white-space:nowrap}
 .stg-open-btn:hover{opacity:.85}
-.stg-micro-btns{display:flex;gap:4px}
-.stg-edit-btn,.stg-del-btn{background:transparent;border:.5px solid var(--border2);border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:11px;cursor:pointer;transition:all .15s}
+.stg-micro-btns{display:flex;gap:3px}
+.stg-edit-btn,.stg-del-btn,.stg-move-btn{background:transparent;border:.5px solid var(--border2);border-radius:5px;padding:4px 8px;font-family:'DM Sans',sans-serif;font-size:11px;cursor:pointer;transition:all .15s}
 .stg-edit-btn{color:var(--text2)}.stg-edit-btn:hover{color:var(--text);border-color:var(--border)}
 .stg-del-btn{color:var(--red);border-color:rgba(245,86,86,.2)}.stg-del-btn:hover{background:rgba(245,86,86,.07)}
+.stg-move-btn{color:var(--text3)}.stg-move-btn:hover{color:var(--text2);border-color:var(--border)}
+.stg-sec-wrap{border:.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.stg-sec-header{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--bg2);cursor:pointer;user-select:none;transition:background .15s}
+.stg-sec-header:hover{background:var(--bg3)}
+.stg-sec-arrow{font-size:10px;color:var(--text3);transition:transform .2s;flex-shrink:0;width:14px;text-align:center;line-height:1}
+.stg-sec-arrow.open{transform:rotate(90deg)}
+.stg-sec-name-lbl{font-size:14px;font-weight:500;flex:1}
+.stg-sec-count{font-size:10px;color:var(--text3);background:var(--bg4);border:.5px solid var(--border);border-radius:12px;padding:1px 8px;flex-shrink:0}
+.stg-sec-btns{display:flex;gap:4px;flex-shrink:0}
+.stg-sec-btn{background:transparent;border:.5px solid var(--border2);border-radius:5px;padding:3px 8px;font-size:11px;color:var(--text3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.stg-sec-btn:hover{color:var(--text);border-color:var(--border)}
+.stg-sec-btn.sdel:hover{color:var(--red);border-color:rgba(245,86,86,.3)}
+.stg-sec-body{display:none;padding:12px 16px;background:var(--bg);border-top:.5px solid var(--border)}
+.stg-sec-body.open{display:block}
+.stg-sec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.stg-add-here{background:transparent;border:.5px dashed var(--border2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text3);cursor:pointer;transition:all .15s;width:100%;font-family:'DM Sans',sans-serif;text-align:left}
+.stg-add-here:hover{border-color:var(--accent);color:var(--accent2)}
 </style>
 </head>
 <body>
@@ -587,12 +597,14 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 </div>
 
   <div id="view-storage" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
       <input class="stg-search" id="stg-search" type="text" placeholder="Поиск по названию и комментарию..." oninput="stgRender()" />
-      <button class="add-btn" onclick="stgOpenModal(null)">+ Добавить</button>
+      <div style="display:flex;gap:6px">
+        <button class="add-btn" style="background:var(--bg3);color:var(--text2);border:.5px solid var(--border2);font-size:12px" onclick="stgOpenSecModal(null)">+ Раздел</button>
+        <button class="add-btn" onclick="stgOpenModal(null,null)">+ Добавить</button>
+      </div>
     </div>
-    <div class="stg-cat-bar" id="stg-cat-bar"></div>
-    <div class="stg-grid" id="stg-list"></div>
+    <div id="stg-list"></div>
   </div>
 
 <!-- Modal: Project -->
@@ -2805,14 +2817,8 @@ document.getElementById('bgt-modal-rep').addEventListener('click', function(e){ 
       <input type="url" id="stg-url" placeholder="https://..." />
     </div>
     <div class="field">
-      <label>Категория</label>
-      <select id="stg-cat-sel">
-        <option>Аудитории</option>
-        <option>Таблицы</option>
-        <option>Инструменты</option>
-        <option>Клиенты</option>
-        <option>Другое</option>
-      </select>
+      <label>Раздел</label>
+      <select id="stg-sec-sel"></select>
     </div>
     <div class="field">
       <label>Комментарий</label>
@@ -2825,105 +2831,252 @@ document.getElementById('bgt-modal-rep').addEventListener('click', function(e){ 
   </div>
 </div>
 
+<!-- Modal: Section name -->
+<div class="overlay" id="stg-sec-modal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title" id="stg-sec-modal-title">Новый раздел</div>
+    <div class="field">
+      <label>Название раздела</label>
+      <input type="text" id="stg-sec-name-inp" placeholder="Например: Контент" />
+    </div>
+    <div class="modal-actions">
+      <button class="mcancel" onclick="stgCloseSecModal()">Отмена</button>
+      <button class="mbtn" onclick="stgSaveSec()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Move item -->
+<div class="overlay" id="stg-move-modal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title">Переместить ссылку</div>
+    <div class="field">
+      <label>Переместить в раздел</label>
+      <select id="stg-move-sec-sel"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="mcancel" onclick="stgCloseMoveModal()">Отмена</button>
+      <button class="mbtn" onclick="stgDoMove()">Переместить</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── STORAGE ────────────────────────────────────────────────────────────
-var stgState = { items: [], cat: 'all', editId: null };
-var STG_CATS = ['Аудитории','Таблицы','Инструменты','Клиенты','Другое'];
+var STG_PALETTE = [
+  {c:'var(--accent2)',b:'rgba(127,110,245,.3)',bg:'rgba(127,110,245,.07)'},
+  {c:'var(--green)',b:'rgba(62,207,142,.25)',bg:'rgba(62,207,142,.06)'},
+  {c:'var(--amber)',b:'rgba(245,166,35,.25)',bg:'rgba(245,166,35,.06)'},
+  {c:'#6eb8f5',b:'rgba(110,184,245,.25)',bg:'rgba(110,184,245,.06)'},
+  {c:'#f57eb6',b:'rgba(245,126,182,.25)',bg:'rgba(245,126,182,.06)'},
+  {c:'var(--text2)',b:'var(--border2)',bg:'var(--bg4)'}
+];
+var STG_DEFAULT_SECS = ['Аудитории','Таблицы','Инструменты','Клиенты','Другое'];
+var stgState = { sections:[], items:[], editId:null, editSecId:null, moveItemId:null, openSecs:{} };
 
 (function stgInit() {
-  try { var d = localStorage.getItem('pm_storage_v1'); if (d) stgState.items = JSON.parse(d); } catch(e) {}
+  try {
+    var raw = localStorage.getItem('pm_storage_v1');
+    if (raw) {
+      var d = JSON.parse(raw);
+      if (Array.isArray(d)) d = stgMigrate(d);
+      stgState.sections = d.sections || [];
+      stgState.items    = d.items    || [];
+    }
+  } catch(e) {}
+  if (!stgState.sections.length) {
+    STG_DEFAULT_SECS.forEach(function(n){
+      stgState.sections.push({id:'sec_'+n.replace(/\s/g,'_'), name:n});
+    });
+  }
+  stgState.sections.forEach(function(s){ stgState.openSecs[s.id] = true; });
 })();
 
-function stgSave() { localStorage.setItem('pm_storage_v1', JSON.stringify(stgState.items)); }
+function stgMigrate(arr) {
+  var cats = [];
+  arr.forEach(function(i){ if (i.cat && cats.indexOf(i.cat)===-1) cats.push(i.cat); });
+  STG_DEFAULT_SECS.forEach(function(c){ if (cats.indexOf(c)===-1) cats.push(c); });
+  var sections = cats.map(function(c){ return {id:'sec_'+c.replace(/\s/g,'_'), name:c}; });
+  var items = arr.map(function(i){ return {id:i.id, name:i.name, url:i.url, sectionId:'sec_'+(i.cat||'Другое').replace(/\s/g,'_'), comment:i.comment||''}; });
+  return {sections:sections, items:items};
+}
+
+function stgSave() {
+  localStorage.setItem('pm_storage_v1', JSON.stringify({sections:stgState.sections, items:stgState.items}));
+}
+
+function stgEsc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function stgPal(idx) { return STG_PALETTE[((idx%STG_PALETTE.length)+STG_PALETTE.length)%STG_PALETTE.length]; }
 
 function stgRender() {
-  var q = (document.getElementById('stg-search').value || '').toLowerCase();
-  var cat = stgState.cat;
-
-  // Cat bar
-  var allCats = ['all'].concat(STG_CATS);
-  document.getElementById('stg-cat-bar').innerHTML = allCats.map(function(c) {
-    var label = c === 'all' ? 'Все' : c;
-    return '<button class="ftab'+(stgState.cat===c?' active':'')+'" onclick="stgSetCat(\''+c+'\')">'+label+'</button>';
-  }).join('');
-
-  // Filter items
-  var items = stgState.items.filter(function(item) {
-    var matchCat = cat === 'all' || item.cat === cat;
-    var matchQ = !q || item.name.toLowerCase().indexOf(q) !== -1 || (item.comment||'').toLowerCase().indexOf(q) !== -1;
-    return matchCat && matchQ;
-  });
-
+  var q = (document.getElementById('stg-search').value||'').toLowerCase();
   var el = document.getElementById('stg-list');
-  if (!items.length) {
-    el.innerHTML = '<div class="empty" style="grid-column:1/-1">'+(stgState.items.length ? 'Ничего не найдено' : 'Библиотека пуста — добавьте первую ссылку')+'</div>';
+
+  if (q) {
+    var results = stgState.items.filter(function(item){
+      return item.name.toLowerCase().indexOf(q)!==-1 || (item.comment||'').toLowerCase().indexOf(q)!==-1;
+    });
+    if (!results.length) { el.innerHTML='<div class="empty">Ничего не найдено</div>'; return; }
+    el.innerHTML = '<div class="stg-sec-grid">'+results.map(function(item){
+      var si = stgState.sections.findIndex(function(s){ return s.id===item.sectionId; });
+      var sec = si>=0 ? stgState.sections[si] : null;
+      return stgCardHtml(item, stgPal(si), sec ? sec.name : '');
+    }).join('')+'</div>';
     return;
   }
-  el.innerHTML = items.map(function(item) {
-    var safeName = item.name.replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    var safeComment = (item.comment||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    var safeUrl = item.url.replace(/"/g,'&quot;');
-    return '<div class="stg-card">' +
-      '<div class="stg-card-title">'+safeName+'</div>' +
-      (safeComment ? '<div class="stg-card-comment">'+safeComment+'</div>' : '') +
-      '<div class="stg-card-foot">' +
-        '<span class="stg-cat-badge stg-cat-'+item.cat+'">'+item.cat+'</span>' +
-        '<div style="display:flex;align-items:center;gap:6px">' +
-          '<div class="stg-micro-btns">' +
-            '<button class="stg-edit-btn" onclick="stgOpenModal(\''+item.id+'\')">✏</button>' +
-            '<button class="stg-del-btn" onclick="stgDelete(\''+item.id+'\')">✕</button>' +
-          '</div>' +
-          '<button class="stg-open-btn" onclick="window.open(\''+safeUrl+'\',\'_blank\')">Открыть ссылку ↗</button>' +
-        '</div>' +
+
+  if (!stgState.sections.length) { el.innerHTML='<div class="empty">Нет разделов — создайте первый</div>'; return; }
+  el.innerHTML = stgState.sections.map(function(sec, idx){
+    var pal = stgPal(idx);
+    var secItems = stgState.items.filter(function(i){ return i.sectionId===sec.id; });
+    var isOpen = !!stgState.openSecs[sec.id];
+    var canDel = secItems.length === 0;
+    var header = '<div class="stg-sec-header" onclick="stgToggleSec(\''+sec.id+'\')">' +
+      '<span class="stg-sec-arrow'+(isOpen?' open':'')+'">▶</span>' +
+      '<span class="stg-sec-name-lbl" style="color:'+pal.c+'">'+stgEsc(sec.name)+'</span>' +
+      '<span class="stg-sec-count">'+secItems.length+'</span>' +
+      '<div class="stg-sec-btns" onclick="event.stopPropagation()">' +
+        '<button class="stg-sec-btn" onclick="stgOpenSecModal(\''+sec.id+'\')">✏</button>' +
+        (canDel ? '<button class="stg-sec-btn sdel" onclick="stgDeleteSec(\''+sec.id+'\')">✕</button>' : '') +
       '</div>' +
     '</div>';
+    var body = '<div class="stg-sec-body'+(isOpen?' open':'')+'" id="stg-body-'+sec.id+'">' +
+      '<div class="stg-sec-grid">' +
+        secItems.map(function(item){ return stgCardHtml(item, pal, ''); }).join('') +
+        '<button class="stg-add-here" onclick="stgOpenModal(\'__new__\',\''+sec.id+'\')">+ Добавить в «'+stgEsc(sec.name)+'»</button>' +
+      '</div>' +
+    '</div>';
+    return '<div class="stg-sec-wrap">'+header+body+'</div>';
   }).join('');
 }
 
-function stgSetCat(c) { stgState.cat = c; stgRender(); }
+function stgCardHtml(item, pal, secLabel) {
+  var safeUrl = item.url.replace(/"/g,'&quot;');
+  var badge = secLabel
+    ? '<span class="stg-cat-badge" style="color:'+pal.c+';border-color:'+pal.b+';background:'+pal.bg+'">'+stgEsc(secLabel)+'</span>'
+    : '<span></span>';
+  return '<div class="stg-card">' +
+    '<div class="stg-card-title">'+stgEsc(item.name)+'</div>' +
+    (item.comment ? '<div class="stg-card-comment">'+stgEsc(item.comment)+'</div>' : '') +
+    '<div class="stg-card-foot">' +
+      badge +
+      '<div style="display:flex;align-items:center;gap:4px">' +
+        '<div class="stg-micro-btns">' +
+          '<button class="stg-edit-btn" onclick="stgOpenModal(\''+item.id+'\',null)">✏</button>' +
+          '<button class="stg-move-btn" onclick="stgOpenMoveModal(\''+item.id+'\')" title="Переместить">⇄</button>' +
+          '<button class="stg-del-btn" onclick="stgDelete(\''+item.id+'\')">✕</button>' +
+        '</div>' +
+        '<button class="stg-open-btn" onclick="window.open(\''+safeUrl+'\',\'_blank\')">Открыть ↗</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
 
-function stgOpenModal(id) {
-  stgState.editId = id;
-  document.getElementById('stg-modal-title').textContent = id ? 'Редактировать' : 'Добавить ссылку';
-  if (id) {
+function stgToggleSec(id) {
+  stgState.openSecs[id] = !stgState.openSecs[id];
+  var body = document.getElementById('stg-body-'+id);
+  if (!body) return;
+  body.classList.toggle('open', !!stgState.openSecs[id]);
+  var arrow = body.previousElementSibling && body.previousElementSibling.querySelector('.stg-sec-arrow');
+  if (arrow) arrow.classList.toggle('open', !!stgState.openSecs[id]);
+}
+
+// Section modal
+function stgOpenSecModal(id) {
+  stgState.editSecId = id;
+  document.getElementById('stg-sec-modal-title').textContent = id ? 'Переименовать раздел' : 'Новый раздел';
+  var sec = id ? stgState.sections.find(function(s){ return s.id===id; }) : null;
+  document.getElementById('stg-sec-name-inp').value = sec ? sec.name : '';
+  document.getElementById('stg-sec-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('stg-sec-name-inp').focus(); }, 60);
+}
+function stgCloseSecModal() { document.getElementById('stg-sec-modal').classList.remove('open'); }
+function stgSaveSec() {
+  var name = document.getElementById('stg-sec-name-inp').value.trim();
+  if (!name) { stgFlash('stg-sec-name-inp'); return; }
+  if (stgState.editSecId) {
+    var sec = stgState.sections.find(function(s){ return s.id===stgState.editSecId; });
+    if (sec) sec.name = name;
+  } else {
+    var newId = 'sec_'+Date.now();
+    stgState.sections.push({id:newId, name:name});
+    stgState.openSecs[newId] = true;
+  }
+  stgSave(); stgCloseSecModal(); stgRender();
+}
+function stgDeleteSec(id) {
+  if (stgState.items.some(function(i){ return i.sectionId===id; })) { alert('Нельзя удалить раздел с ссылками'); return; }
+  if (!confirm('Удалить пустой раздел?')) return;
+  stgState.sections = stgState.sections.filter(function(s){ return s.id!==id; });
+  stgSave(); stgRender();
+}
+
+// Item modal
+function stgPopulateSections(selectedId) {
+  document.getElementById('stg-sec-sel').innerHTML = stgState.sections.map(function(s){
+    return '<option value="'+s.id+'"'+(s.id===selectedId?' selected':'')+'>'+stgEsc(s.name)+'</option>';
+  }).join('');
+}
+function stgOpenModal(id, preselectSecId) {
+  stgState.editId = (id && id!=='__new__') ? id : null;
+  document.getElementById('stg-modal-title').textContent = stgState.editId ? 'Редактировать' : 'Добавить ссылку';
+  if (stgState.editId) {
     var item = stgState.items.find(function(i){ return i.id===id; });
     if (!item) return;
+    stgPopulateSections(item.sectionId);
     document.getElementById('stg-name').value = item.name;
     document.getElementById('stg-url').value = item.url;
-    document.getElementById('stg-cat-sel').value = item.cat;
     document.getElementById('stg-comment').value = item.comment||'';
   } else {
+    var defId = preselectSecId || (stgState.sections[0] ? stgState.sections[0].id : '');
+    stgPopulateSections(defId);
     document.getElementById('stg-name').value = '';
     document.getElementById('stg-url').value = '';
-    document.getElementById('stg-cat-sel').value = 'Аудитории';
     document.getElementById('stg-comment').value = '';
   }
   document.getElementById('stg-modal').classList.add('open');
   setTimeout(function(){ document.getElementById('stg-name').focus(); }, 60);
 }
-
 function stgCloseModal() { document.getElementById('stg-modal').classList.remove('open'); }
-
 function stgSaveItem() {
   var name = document.getElementById('stg-name').value.trim();
-  var url = document.getElementById('stg-url').value.trim();
-  var cat = document.getElementById('stg-cat-sel').value;
+  var url  = document.getElementById('stg-url').value.trim();
+  var secId = document.getElementById('stg-sec-sel').value;
   var comment = document.getElementById('stg-comment').value.trim();
   if (!name) { stgFlash('stg-name'); return; }
-  if (!url) { stgFlash('stg-url'); return; }
+  if (!url)  { stgFlash('stg-url');  return; }
   if (stgState.editId) {
     var item = stgState.items.find(function(i){ return i.id===stgState.editId; });
-    if (item) { item.name=name; item.url=url; item.cat=cat; item.comment=comment; }
+    if (item) { item.name=name; item.url=url; item.sectionId=secId; item.comment=comment; }
   } else {
-    stgState.items.unshift({ id:'stg_'+Date.now(), name:name, url:url, cat:cat, comment:comment });
+    stgState.items.unshift({id:'stg_'+Date.now(), name:name, url:url, sectionId:secId, comment:comment});
   }
   stgSave(); stgCloseModal(); stgRender();
 }
-
 function stgDelete(id) {
   if (!confirm('Удалить ссылку?')) return;
   stgState.items = stgState.items.filter(function(i){ return i.id!==id; });
   stgSave(); stgRender();
+}
+
+// Move modal
+function stgOpenMoveModal(itemId) {
+  stgState.moveItemId = itemId;
+  var item = stgState.items.find(function(i){ return i.id===itemId; });
+  var curId = item ? item.sectionId : '';
+  var others = stgState.sections.filter(function(s){ return s.id!==curId; });
+  if (!others.length) { alert('Больше нет разделов для перемещения'); return; }
+  document.getElementById('stg-move-sec-sel').innerHTML = others.map(function(s){
+    return '<option value="'+s.id+'">'+stgEsc(s.name)+'</option>';
+  }).join('');
+  document.getElementById('stg-move-modal').classList.add('open');
+}
+function stgCloseMoveModal() { document.getElementById('stg-move-modal').classList.remove('open'); }
+function stgDoMove() {
+  var newSecId = document.getElementById('stg-move-sec-sel').value;
+  var item = stgState.items.find(function(i){ return i.id===stgState.moveItemId; });
+  if (item && newSecId) { item.sectionId = newSecId; stgSave(); }
+  stgCloseMoveModal(); stgRender();
 }
 
 function stgFlash(id) {
@@ -2933,6 +3086,8 @@ function stgFlash(id) {
 }
 
 document.getElementById('stg-modal').addEventListener('click', function(e){ if(e.target===this) stgCloseModal(); });
+document.getElementById('stg-sec-modal').addEventListener('click', function(e){ if(e.target===this) stgCloseSecModal(); });
+document.getElementById('stg-move-modal').addEventListener('click', function(e){ if(e.target===this) stgCloseMoveModal(); });
 </script>
 </body>
 </html>
