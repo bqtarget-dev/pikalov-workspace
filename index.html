@@ -367,6 +367,36 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .idea-del-btn:hover{color:var(--red)}
 .idea-empty{font-size:12px;color:var(--text3);text-align:center;padding:4px 0}
 
+/* ── Pomodoro ─────────────────────────────────────────────────────── */
+.pomo-wrap{max-width:480px;margin:0 auto;padding:32px 20px 48px;display:flex;flex-direction:column;align-items:center;gap:22px}
+.pomo-modes{display:flex;gap:4px;background:var(--bg3);border-radius:10px;padding:3px}
+.pomo-mode{background:transparent;border:none;border-radius:7px;padding:6px 16px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.pomo-mode.active{background:var(--bg4);color:var(--text);font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.pomo-ring-wrap{position:relative;width:220px;height:220px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pomo-ring{position:absolute;top:0;left:0;width:100%;height:100%;transform:rotate(-90deg)}
+.pomo-ring-bg{fill:none;stroke:var(--bg4);stroke-width:10}
+.pomo-ring-fg{fill:none;stroke:var(--accent);stroke-width:10;stroke-linecap:round;stroke-dasharray:603.2;stroke-dashoffset:0;transition:stroke-dashoffset .8s linear,stroke .4s}
+.pomo-time{font-family:'Bebas Neue',sans-serif;font-size:62px;letter-spacing:.04em;line-height:1;color:var(--text);position:relative;z-index:1;text-align:center}
+.pomo-mode-label{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--text3);position:relative;z-index:1;text-align:center;margin-top:2px}
+.pomo-controls{display:flex;align-items:center;gap:14px}
+.pomo-start{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:12px 40px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:opacity .15s,background .2s;min-width:130px}
+.pomo-start:hover{opacity:.88}
+.pomo-start.is-running{background:var(--bg3);color:var(--text);border:.5px solid var(--border2)}
+.pomo-ctrl{background:var(--bg3);border:.5px solid var(--border2);color:var(--text2);border-radius:10px;width:42px;height:42px;font-size:17px;cursor:pointer;transition:color .15s;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif}
+.pomo-ctrl:hover{color:var(--text)}
+.pomo-dots{display:flex;gap:6px;align-items:center}
+.pomo-dot{width:10px;height:10px;border-radius:50%;background:var(--bg4);border:.5px solid var(--border2);transition:background .2s}
+.pomo-dot.filled{background:#7f6ef5;border-color:#7f6ef5}
+.pomo-count{font-size:12px;color:var(--text3);margin-left:6px}
+.pomo-task-inp{width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:10px;padding:11px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s;text-align:center}
+.pomo-task-inp:focus{border-color:var(--accent)}
+.pomo-task-inp::placeholder{color:var(--text3)}
+.pomo-hist-wrap{width:100%}
+.pomo-hist-hdr{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:10px}
+.pomo-hist-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:8px;margin-bottom:5px;font-size:13px}
+.pomo-hist-time{font-size:11px;color:var(--text3);flex-shrink:0;width:40px}
+.pomo-hist-task{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)}
+
 /* ── Calendar: dots & tooltip ─────────────────────────────────────── */
 .cal-cell-wrap{display:flex;flex-direction:column;align-items:center;gap:1px;cursor:default}
 .cal-dots{display:flex;gap:1px;flex-wrap:wrap;max-width:14px;justify-content:center;min-height:4px}
@@ -387,7 +417,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <button class="ntab" onclick="showTab('team')">👥 Команда</button>
     <button class="ntab" onclick="showTab('calendar')">📅 Календарь</button>
     <button class="ntab soon" title="Скоро">✅ Задачи</button>
-    <button class="ntab soon" title="Скоро">🍅 Помидоро</button>
+    <button class="ntab" onclick="showTab('pomodoro')">🍅 Помидоро</button>
   </div>
 </div>
 
@@ -426,7 +456,41 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
   <div id="view-team" style="display:none"></div>
   <div id="view-calendar" style="display:none"></div>
   <div id="view-tasks"   style="display:none"><div class="coming-soon"><div class="cs-icon">✅</div><div>Раздел «Задачи» — скоро</div></div></div>
-  <div id="view-pomodoro"style="display:none"><div class="coming-soon"><div class="cs-icon">🍅</div><div>Раздел «Помидоро» — скоро</div></div></div>
+  <div id="view-pomodoro" style="display:none">
+    <div class="pomo-wrap">
+      <div class="pomo-modes">
+        <button class="pomo-mode active" id="pomo-btn-work"  onclick="pomoSetMode('work')">Работа</button>
+        <button class="pomo-mode"        id="pomo-btn-break" onclick="pomoSetMode('break')">Отдых 5 мин</button>
+        <button class="pomo-mode"        id="pomo-btn-long"  onclick="pomoSetMode('long')">Длинный отдых</button>
+      </div>
+      <div class="pomo-ring-wrap">
+        <svg class="pomo-ring" viewBox="0 0 220 220">
+          <circle class="pomo-ring-bg" cx="110" cy="110" r="96"/>
+          <circle class="pomo-ring-fg" id="pomo-ring-fg" cx="110" cy="110" r="96"/>
+        </svg>
+        <div style="display:flex;flex-direction:column;align-items:center;position:relative;z-index:1">
+          <div class="pomo-time"       id="pomo-time">25:00</div>
+          <div class="pomo-mode-label" id="pomo-mode-label">Работа</div>
+        </div>
+      </div>
+      <div class="pomo-controls">
+        <button class="pomo-ctrl" onclick="pomoReset()" title="Сброс">↺</button>
+        <button class="pomo-start" id="pomo-start-btn" onclick="pomoToggle()">Старт</button>
+      </div>
+      <div class="pomo-dots" id="pomo-dots">
+        <div class="pomo-dot" id="pd0"></div>
+        <div class="pomo-dot" id="pd1"></div>
+        <div class="pomo-dot" id="pd2"></div>
+        <div class="pomo-dot" id="pd3"></div>
+        <span class="pomo-count" id="pomo-count">0 помидоров</span>
+      </div>
+      <input class="pomo-task-inp" id="pomo-task-inp" type="text" placeholder="Над чем работаешь? (необязательно)">
+      <div class="pomo-hist-wrap">
+        <div class="pomo-hist-hdr">История сегодня</div>
+        <div id="pomo-hist-list"><div style="color:var(--text3);font-size:13px;text-align:center;padding:16px 0">Пока нет сессий</div></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal: Project -->
@@ -709,11 +773,13 @@ function showTab(t) {
     document.getElementById('view-'+k).style.display = k===t?'':'none';
   });
   document.querySelectorAll('.ntab:not(.soon)').forEach(function(b,i){
-    b.classList.toggle('active', i===['mediaplans','analytics','team','calendar','tasks','pomodoro'].indexOf(t));
+    b.classList.toggle('active', i===['mediaplans','analytics','team','calendar','pomodoro'].indexOf(t));
   });
   if (t === 'analytics') renderAnalytics();
   if (t === 'team')      renderTeam();
   if (t === 'calendar')  renderCalendar();
+  if (t === 'pomodoro')  pomoRenderUI();
+  if (t !== 'pomodoro')  document.title = 'PIKALOV MEDIA Workspace';
 }
 
 // ── FILTER ────────────────────────────────────────────────────────────
@@ -2071,10 +2137,167 @@ function hideCalTooltip() {
   if (tt) tt.style.display = 'none';
 }
 
+// ── POMODORO ──────────────────────────────────────────────────────────
+var POMO_MODES = {
+  work:  {label:'Работа',        secs:25*60, color:'#7f6ef5'},
+  break: {label:'Отдых',         secs: 5*60, color:'#50C878'},
+  long:  {label:'Длинный отдых', secs:15*60, color:'#4A9EFF'}
+};
+var pomoState = {mode:'work', running:false, secsLeft:25*60, total:25*60,
+                 tomatoesToday:0, history:[], histDate:''};
+var pomoTimer  = null;
+var POMO_C     = 2 * Math.PI * 96; // circumference ≈ 603.2
+
+function pomoLoad() {
+  try {
+    var d = JSON.parse(localStorage.getItem('pm_pomo_v1') || '{}');
+    var today = new Date().toISOString().slice(0,10);
+    if (d.histDate === today) {
+      pomoState.tomatoesToday = d.tomatoesToday || 0;
+      pomoState.history       = d.history || [];
+    }
+    pomoState.histDate = today;
+  } catch(e) {}
+}
+
+function pomoSave() {
+  localStorage.setItem('pm_pomo_v1', JSON.stringify({
+    histDate:      new Date().toISOString().slice(0,10),
+    tomatoesToday: pomoState.tomatoesToday,
+    history:       pomoState.history
+  }));
+}
+
+function pomoSetMode(mode) {
+  pomoStop();
+  pomoState.mode     = mode;
+  pomoState.secsLeft = POMO_MODES[mode].secs;
+  pomoState.total    = POMO_MODES[mode].secs;
+  document.querySelectorAll('.pomo-mode').forEach(function(b){ b.classList.remove('active'); });
+  var mb = document.getElementById('pomo-btn-' + mode);
+  if (mb) mb.classList.add('active');
+  pomoRenderUI();
+}
+
+function pomoToggle() {
+  if (pomoState.running) pomoStop(); else pomoStart();
+}
+
+function pomoStart() {
+  if (pomoState.secsLeft <= 0) {
+    pomoState.secsLeft = pomoState.total;
+  }
+  pomoState.running = true;
+  pomoTimer = setInterval(function(){
+    pomoState.secsLeft = Math.max(0, pomoState.secsLeft - 1);
+    pomoRenderUI();
+    if (pomoState.secsLeft === 0) pomoFinish();
+  }, 1000);
+  pomoRenderUI();
+}
+
+function pomoStop() {
+  pomoState.running = false;
+  if (pomoTimer) { clearInterval(pomoTimer); pomoTimer = null; }
+  pomoRenderUI();
+}
+
+function pomoReset() {
+  pomoStop();
+  pomoState.secsLeft = pomoState.total;
+  pomoRenderUI();
+}
+
+function pomoFinish() {
+  pomoStop();
+  pomoBeep();
+  if (pomoState.mode === 'work') {
+    pomoState.tomatoesToday++;
+    var task = ((document.getElementById('pomo-task-inp') || {}).value || '').trim();
+    var now  = new Date().toLocaleTimeString('ru', {hour:'2-digit', minute:'2-digit'});
+    pomoState.history.unshift({time:now, task:task});
+    pomoSave();
+    var nextMode = (pomoState.tomatoesToday % 4 === 0) ? 'long' : 'break';
+    pomoSetMode(nextMode);
+  } else {
+    pomoSetMode('work');
+  }
+}
+
+function pomoBeep() {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.18, 0.36].forEach(function(offset){
+      var osc = ctx.createOscillator();
+      var g   = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.frequency.value = 880; osc.type = 'sine';
+      g.gain.setValueAtTime(0.35, ctx.currentTime + offset);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.15);
+      osc.start(ctx.currentTime + offset);
+      osc.stop(ctx.currentTime + offset + 0.16);
+    });
+  } catch(e) {}
+}
+
+function pomoRenderUI() {
+  var mode   = POMO_MODES[pomoState.mode];
+  var left   = pomoState.secsLeft;
+  var total  = pomoState.total;
+  var mins   = Math.floor(left / 60);
+  var secs   = left % 60;
+  var ts     = (mins<10?'0':'')+mins+':'+(secs<10?'0':'')+secs;
+
+  var tel = document.getElementById('pomo-time');
+  if (tel) tel.textContent = ts;
+
+  var lel = document.getElementById('pomo-mode-label');
+  if (lel) lel.textContent = mode.label;
+
+  var ring = document.getElementById('pomo-ring-fg');
+  if (ring) {
+    ring.style.strokeDashoffset = POMO_C * (1 - left / total);
+    ring.style.stroke = mode.color;
+  }
+
+  var btn = document.getElementById('pomo-start-btn');
+  if (btn) {
+    btn.textContent = pomoState.running ? 'Пауза' : (left < total && left > 0 ? 'Продолжить' : 'Старт');
+    btn.className   = 'pomo-start' + (pomoState.running ? ' is-running' : '');
+    btn.style.background = pomoState.running ? '' : mode.color;
+  }
+
+  var cyclePos = pomoState.tomatoesToday % 4;
+  for (var i=0; i<4; i++) {
+    var dot = document.getElementById('pd'+i);
+    if (dot) dot.className = 'pomo-dot' + (i < cyclePos ? ' filled' : '');
+  }
+  var cnt = document.getElementById('pomo-count');
+  if (cnt) cnt.textContent = pomoState.tomatoesToday + ' помидоров';
+
+  var hl = document.getElementById('pomo-hist-list');
+  if (hl) {
+    if (!pomoState.history.length) {
+      hl.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:16px 0">Пока нет сессий</div>';
+    } else {
+      hl.innerHTML = pomoState.history.map(function(h){
+        return '<div class="pomo-hist-row">' +
+          '<span class="pomo-hist-time">'+h.time+'</span>' +
+          '<span>🍅</span>' +
+          '<span class="pomo-hist-task">'+(h.task || '<span style="color:var(--text3)">—</span>')+'</span>' +
+        '</div>';
+      }).join('');
+    }
+  }
+
+  if (pomoState.running) document.title = ts + ' · Помидоро — PIKALOV';
+}
+
 loadData();
 render();
 initMember();
 loadTeamData();
+pomoLoad();
 document.getElementById('modal-assign-idea').addEventListener('click',function(e){if(e.target===this)closeAssignIdeaModal();});
 document.getElementById('modal-cal-day').addEventListener('click',function(e){if(e.target===this)closeCalDayModal();});
 document.getElementById('cal-day-title').addEventListener('keydown',function(e){if(e.key==='Enter')saveCalDayTask();});
