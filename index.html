@@ -417,7 +417,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <button class="ntab"       onclick="showTab('analytics')">📊 Аналитика</button>
     <button class="ntab" onclick="showTab('team')">👥 Команда</button>
     <button class="ntab" onclick="showTab('calendar')">📅 Календарь</button>
-    <button class="ntab soon" title="Скоро">✅ Задачи</button>
+
     <button class="ntab" onclick="showTab('pomodoro')">🍅 Помидоро</button>
   </div>
 </div>
@@ -456,7 +456,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
   </div>
   <div id="view-team" style="display:none"></div>
   <div id="view-calendar" style="display:none"></div>
-  <div id="view-tasks"   style="display:none"><div class="coming-soon"><div class="cs-icon">✅</div><div>Раздел «Задачи» — скоро</div></div></div>
+
   <div id="view-pomodoro" style="display:none">
     <div class="pomo-wrap">
       <div class="pomo-modes">
@@ -771,7 +771,7 @@ function fmtD(s) { return new Date(s).toLocaleDateString('ru',{day:'2-digit',mon
 // ── TABS ──────────────────────────────────────────────────────────────
 function showTab(t) {
   currentTab = t;
-  ['mediaplans','analytics','team','calendar','tasks','pomodoro'].forEach(function(k){
+  ['mediaplans','analytics','team','calendar','pomodoro'].forEach(function(k){
     document.getElementById('view-'+k).style.display = k===t?'':'none';
   });
   document.querySelectorAll('.ntab:not(.soon)').forEach(function(b,i){
