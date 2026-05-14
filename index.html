@@ -320,7 +320,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .gcal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:.5px solid var(--border)}
 .gcal-dow{padding:6px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);text-align:right}
 .gcal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
-.gcal-cell{min-height:86px;border-right:.5px solid var(--border);border-bottom:.5px solid var(--border);padding:4px 5px;position:relative;box-sizing:border-box}
+.gcal-cell{min-height:86px;border-right:.5px solid var(--border);border-bottom:.5px solid var(--border);padding:4px 5px;position:relative;box-sizing:border-box;cursor:pointer;transition:background .1s}
+.gcal-cell:hover{background:rgba(127,110,245,.06)}
+.gcal-cell-other:hover{background:rgba(0,0,0,.18)}
 .gcal-cell:nth-child(7n){border-right:none}
 .gcal-cell-num{font-size:11px;text-align:right;margin-bottom:2px;color:var(--text2);line-height:1}
 .gcal-cell-today .gcal-cell-num span{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;background:var(--accent);border-radius:50%;color:#fff;font-weight:600;font-size:11px}
@@ -1526,8 +1528,9 @@ function _renderTeam() {
     var st     = teamState.statuses[m.slug] || {status:'online'};
     var online = st.status === 'online';
 
-    var memberTasks = teamState.tasks.filter(function(t){ return t.assignee === m.slug; })
-      .sort(function(a,b){
+    var memberTasks = teamState.tasks.filter(function(t){
+        return t.assignee === m.slug && (!t.deadline || t.deadline.slice(0,10) <= today);
+      }).sort(function(a,b){
         if(a.deadline&&b.deadline) return a.deadline<b.deadline?-1:a.deadline>b.deadline?1:0;
         if(a.deadline) return -1; if(b.deadline) return 1; return 0;
       });
@@ -1871,6 +1874,46 @@ function saveTask() {
   saveTeamData(); closeTaskModal(); renderTeam();
 }
 
+// ── CALENDAR DAY MODAL ────────────────────────────────────────────────
+var calDayModalKey = null;
+
+function openCalDayModal(key) {
+  calDayModalKey = key;
+  var d = new Date(key + 'T00:00');
+  var RU_MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  var label = d.getDate() + ' ' + RU_MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  document.getElementById('cal-day-modal-title').textContent = 'Задача · ' + label;
+  document.getElementById('cal-day-title').value = '';
+  document.getElementById('cal-day-time').value  = '';
+  document.getElementById('cal-day-pri').value   = 'medium';
+  var opts = getBoardMembers().map(function(m){
+    return '<option value="'+m.slug+'">'+esc(m.name)+'</option>';
+  }).join('');
+  document.getElementById('cal-day-assignee').innerHTML = opts;
+  document.getElementById('modal-cal-day').classList.add('open');
+  setTimeout(function(){ var el=document.getElementById('cal-day-title'); if(el)el.focus(); }, 60);
+}
+
+function closeCalDayModal() {
+  calDayModalKey = null;
+  document.getElementById('modal-cal-day').classList.remove('open');
+}
+
+function saveCalDayTask() {
+  var title = document.getElementById('cal-day-title').value.trim();
+  if (!title) { document.getElementById('cal-day-title').focus(); return; }
+  var slug     = document.getElementById('cal-day-assignee').value;
+  var timeVal  = document.getElementById('cal-day-time').value;
+  var pri      = document.getElementById('cal-day-pri').value;
+  var deadline = timeVal ? (calDayModalKey + 'T' + timeVal) : calDayModalKey;
+  var id = 't' + Date.now() + Math.random().toString(36).slice(2,6);
+  teamState.tasks.push({id:id, title:title, assignee:slug, assigner:currentMember||'zhenya',
+    deadline:deadline, priority:pri, status:'new', comment:'', repeat:false});
+  saveTeamData();
+  closeCalDayModal();
+  renderCalendar();
+}
+
 // ── CALENDAR ──────────────────────────────────────────────────────────
 function navCalMonth(delta) {
   calViewDate = new Date(calViewDate.getFullYear(), calViewDate.getMonth() + delta, 1);
@@ -1953,15 +1996,16 @@ function renderCalendar() {
     var pills = shown.map(function(t){
       var color = getMemberColor(t.assignee);
       return '<div class="gcal-task-pill' + (t.status==='done'?' done-pill':'') + '" style="background:'+color+'"' +
-        ' onmouseenter="showCalTaskTip(event,\''+t.id+'\')" onmouseleave="hideCalTooltip()">' +
+        ' onmouseenter="showCalTaskTip(event,\''+t.id+'\')" onmouseleave="hideCalTooltip()"' +
+        ' onclick="event.stopPropagation()">' +
         esc(truncTitle(t.title)) + '</div>';
     }).join('');
 
     var cls = 'gcal-cell' + (isToday?' gcal-cell-today':'') + (!thisMonth?' gcal-cell-other':'');
-    cellsHtml += '<div class="'+cls+'">' +
+    cellsHtml += '<div class="'+cls+'" onclick="openCalDayModal(\''+key+'\')">' +
       '<div class="gcal-cell-num"><span>'+dayNum+'</span></div>' +
       pills +
-      (extra>0 ? '<div class="gcal-more">+'+extra+' ещё</div>' : '') +
+      (extra>0 ? '<div class="gcal-more" onclick="event.stopPropagation()">+'+extra+' ещё</div>' : '') +
     '</div>';
   }
 
@@ -2031,6 +2075,8 @@ render();
 initMember();
 loadTeamData();
 document.getElementById('modal-assign-idea').addEventListener('click',function(e){if(e.target===this)closeAssignIdeaModal();});
+document.getElementById('modal-cal-day').addEventListener('click',function(e){if(e.target===this)closeCalDayModal();});
+document.getElementById('cal-day-title').addEventListener('keydown',function(e){if(e.key==='Enter')saveCalDayTask();});
 </script>
 
 <div class="overlay" id="modal-assign-idea">
@@ -2048,6 +2094,36 @@ document.getElementById('modal-assign-idea').addEventListener('click',function(e
     <div class="modal-footer">
       <button class="btn-ghost" onclick="closeAssignIdeaModal()">Отмена</button>
       <button class="btn-primary" onclick="doAssignIdea()">Назначить</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-cal-day">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title" id="cal-day-modal-title">Новая задача</div>
+    <div class="field">
+      <label>Название задачи</label>
+      <input type="text" id="cal-day-title" placeholder="Что сделать?">
+    </div>
+    <div class="field">
+      <label>Исполнитель</label>
+      <select id="cal-day-assignee"></select>
+    </div>
+    <div class="field">
+      <label>Время <span style="font-size:10px;color:var(--text3);text-transform:none;letter-spacing:0">(необязательно — пусто = весь день)</span></label>
+      <input type="time" id="cal-day-time" style="color-scheme:dark">
+    </div>
+    <div class="field">
+      <label>Приоритет</label>
+      <select id="cal-day-pri">
+        <option value="high">🔴 Высокий</option>
+        <option value="medium" selected>🟡 Средний</option>
+        <option value="low">🟢 Низкий</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="mcancel" onclick="closeCalDayModal()">Отмена</button>
+      <button class="mbtn" onclick="saveCalDayTask()">Добавить</button>
     </div>
   </div>
 </div>
