@@ -309,21 +309,26 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .mc2-del{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10px;padding:0 3px;flex-shrink:0;transition:color .15s;line-height:1}
 .mc2-del:hover{color:var(--red)}
 
-/* ── Calendar ─────────────────────────────────────────────────────── */
-.cal-outer{display:flex;gap:6px;align-items:flex-start}
-.cal-day-labels{display:flex;flex-direction:column;gap:3px;padding-top:20px;flex-shrink:0;width:20px}
-.cal-day-lbl{height:12px;font-size:9px;color:var(--text3);line-height:12px}
-.cal-month-row{display:flex;gap:3px;margin-bottom:4px}
-.cal-month-cell{width:12px;font-size:9px;color:var(--text3);overflow:visible;white-space:nowrap}
-.cal-grid{display:flex;gap:3px}
-.cal-col{display:flex;flex-direction:column;gap:3px}
-.cal-cell{width:12px;height:12px;border-radius:2px;flex-shrink:0}
-.cal-cell.c0{background:var(--bg4)}
-.cal-cell.c-future{background:transparent}
-.cal-cell.c1{background:rgba(62,207,142,.28)}
-.cal-cell.c2{background:rgba(62,207,142,.6)}
-.cal-cell.c3{background:var(--green)}
-.cal-legend{display:flex;align-items:center;gap:5px;margin-top:12px;font-size:11px;color:var(--text3)}
+/* ── Monthly calendar (Google Calendar style) ─────────────────────── */
+.gcal-wrap{background:var(--bg2);border:.5px solid var(--border);border-radius:12px;overflow:hidden}
+.gcal-header{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:.5px solid var(--border)}
+.gcal-title{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:.05em;flex:1;text-align:center}
+.gcal-nav{background:var(--bg3);border:.5px solid var(--border2);border-radius:7px;width:28px;height:28px;cursor:pointer;color:var(--text2);font-size:14px;display:flex;align-items:center;justify-content:center;transition:color .15s;flex-shrink:0}
+.gcal-nav:hover{color:var(--text)}
+.gcal-today-btn{background:var(--bg3);border:.5px solid var(--border2);border-radius:7px;padding:4px 12px;cursor:pointer;color:var(--text2);font-size:11px;font-family:'DM Sans',sans-serif;transition:color .15s;white-space:nowrap}
+.gcal-today-btn:hover{color:var(--text)}
+.gcal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:.5px solid var(--border)}
+.gcal-dow{padding:6px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);text-align:right}
+.gcal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.gcal-cell{min-height:86px;border-right:.5px solid var(--border);border-bottom:.5px solid var(--border);padding:4px 5px;position:relative;box-sizing:border-box}
+.gcal-cell:nth-child(7n){border-right:none}
+.gcal-cell-num{font-size:11px;text-align:right;margin-bottom:2px;color:var(--text2);line-height:1}
+.gcal-cell-today .gcal-cell-num span{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;background:var(--accent);border-radius:50%;color:#fff;font-weight:600;font-size:11px}
+.gcal-cell-other{background:rgba(0,0,0,.12)}
+.gcal-cell-other .gcal-cell-num{color:var(--text3)}
+.gcal-task-pill{font-size:10px;padding:1px 5px 2px;border-radius:4px;margin-bottom:2px;cursor:default;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;font-weight:500;line-height:1.5;position:relative}
+.gcal-task-pill.done-pill{opacity:.4;text-decoration:line-through}
+.gcal-more{font-size:9px;color:var(--text3);padding:1px 0;cursor:default}
 
 /* ── Quick input & compact checkbox tasks ─────────────────────────── */
 .mc2-quick{display:flex;gap:5px;align-items:center;margin-top:4px}
@@ -1430,9 +1435,14 @@ var editingTaskId  = null;
 var taskFilter     = 'all';
 var calDayData     = {};
 var assigningIdeaId = null;
+var calViewDate    = new Date();
 
 var MEMBER_COLORS = {dana:'#7f6ef5', lesha:'#4A9EFF', ruslana:'#FF8C42'};
-function getMemberColor(slug) { return MEMBER_COLORS[slug] || '#888'; }
+function getMemberColor(slug) {
+  if (MEMBER_COLORS[slug]) return MEMBER_COLORS[slug];
+  var cm = teamState.customMembers && teamState.customMembers.find(function(m){ return m.slug===slug; });
+  return cm ? '#50C878' : '#888';
+}
 
 function getAllMembers()    { return MEMBERS.concat(teamState.customMembers || []); }
 function getBoardMembers() { return MEMBERS.filter(function(m){ return !m.owner; }).concat(teamState.customMembers || []); }
@@ -1862,75 +1872,38 @@ function saveTask() {
 }
 
 // ── CALENDAR ──────────────────────────────────────────────────────────
+function navCalMonth(delta) {
+  calViewDate = new Date(calViewDate.getFullYear(), calViewDate.getMonth() + delta, 1);
+  renderCalendar();
+}
+
+function calToday() {
+  calViewDate = new Date();
+  renderCalendar();
+}
+
 function renderCalendar() {
   var view = document.getElementById('view-calendar');
   if (!view) return;
 
-  // Build per-day data: {key: [{slug, name, title, done}]}
+  var today    = new Date();
+  var todayStr = today.toISOString().slice(0,10);
+
+  // Build per-day data keyed by YYYY-MM-DD → array of full task objects
   calDayData = {};
   teamState.tasks.forEach(function(t){
     if (!t.deadline) return;
     var key = t.deadline.slice(0,10);
     if (!calDayData[key]) calDayData[key] = [];
-    calDayData[key].push({slug:t.assignee, name:getMemberName(t.assignee), title:t.title, done:t.status==='done'});
+    calDayData[key].push(t);
   });
 
-  // Done count per day (for background intensity)
+  // Stats
   var doneByDay = {};
   Object.keys(calDayData).forEach(function(k){
-    doneByDay[k] = calDayData[k].filter(function(x){return x.done;}).length;
+    doneByDay[k] = calDayData[k].filter(function(x){return x.status==='done';}).length;
   });
-
-  var today    = new Date();
-  var todayStr = today.toISOString().slice(0,10);
-
-  var start = new Date(today);
-  start.setDate(start.getDate() - ((start.getDay()+6)%7) - 12*7);
-
-  var RU_M = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
-  var RU_D = ['Пн','','Ср','','Пт','',''];
-
-  var weeks = [];
-  for (var w=0; w<13; w++){
-    var col=[];
-    for (var d=0; d<7; d++){
-      var date = new Date(start.getTime()+(w*7+d)*86400000);
-      var key  = date.toISOString().slice(0,10);
-      var cnt  = doneByDay[key]||0;
-      var cls  = key>todayStr ? 'c-future' : cnt===0 ? 'c0' : cnt<=2 ? 'c1' : cnt<=4 ? 'c2' : 'c3';
-      col.push({key:key, cnt:cnt, cls:cls, month:date.getMonth()});
-    }
-    weeks.push(col);
-  }
-
-  var monthRow=''; var lastM=-1;
-  weeks.forEach(function(col){
-    var m=col[0].month;
-    monthRow+='<div class="cal-month-cell">'+(m!==lastM?RU_M[m]:'')+'</div>';
-    lastM=m;
-  });
-
-  var gridCols = weeks.map(function(col){
-    return '<div class="cal-col">'+col.map(function(day){
-      var entries = calDayData[day.key] || [];
-      // Up to 4 colored dots for members with tasks
-      var seen = {}; var dots = '';
-      entries.forEach(function(e){
-        if (!seen[e.slug] && Object.keys(seen).length < 4) {
-          seen[e.slug]=1;
-          var c = getMemberColor(e.slug);
-          dots += '<div class="cal-dot" style="background:'+c+'"></div>';
-        }
-      });
-      return '<div class="cal-cell-wrap" onmouseenter="showCalTooltip(event,\''+day.key+'\')" onmouseleave="hideCalTooltip()">' +
-        '<div class="cal-cell '+day.cls+'"></div>' +
-        (dots ? '<div class="cal-dots">'+dots+'</div>' : '<div class="cal-dots"></div>') +
-      '</div>';
-    }).join('')+'</div>';
-  }).join('');
-
-  var totalDone = Object.values ? Object.values(doneByDay).reduce(function(s,v){return s+v;},0) :
-    Object.keys(doneByDay).reduce(function(s,k){return s+doneByDay[k];},0);
+  var totalDone = Object.keys(doneByDay).reduce(function(s,k){return s+doneByDay[k];},0);
   var streak=0; var sd=new Date(today);
   for(var i=0;i<365;i++){var sk=sd.toISOString().slice(0,10);if(!doneByDay[sk])break;streak++;sd.setDate(sd.getDate()-1);}
 
@@ -1940,57 +1913,112 @@ function renderCalendar() {
       '<div style="font-size:22px;font-weight:500" class="'+cls+'">'+val+'</div></div>';
   }
 
-  view.innerHTML=
-    '<div style="padding:24px">'+
-    '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:22px;letter-spacing:.06em;margin-bottom:20px">Активность команды</div>'+
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">'+
-      sCard('Завершено задач',totalDone,'cg')+
-      sCard('Серия дней',streak,'ca')+
-      sCard('Всего задач',teamState.tasks.length,'cp')+
-    '</div>'+
-    '<div style="background:var(--bg2);border:.5px solid var(--border);border-radius:12px;padding:20px;overflow-x:auto">'+
-      '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:12px">Задачи участников · последние 3 месяца</div>'+
-      '<div class="cal-outer">'+
-        '<div class="cal-day-labels">'+RU_D.map(function(d){return '<div class="cal-day-lbl">'+d+'</div>';}).join('')+'</div>'+
-        '<div>'+
-          '<div class="cal-month-row">'+monthRow+'</div>'+
-          '<div class="cal-grid">'+gridCols+'</div>'+
-        '</div>'+
-      '</div>'+
-      '<div class="cal-legend"><span>Меньше</span>'+
-        '<div class="cal-cell c0"></div><div class="cal-cell c1"></div><div class="cal-cell c2"></div><div class="cal-cell c3"></div>'+
-        '<span>Больше</span>'+
-        '<span style="margin-left:12px;display:flex;gap:6px;align-items:center">'+
-          Object.keys(MEMBER_COLORS).map(function(s){
-            return '<span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:'+MEMBER_COLORS[s]+';display:inline-block"></span>'+esc(getMemberName(s))+'</span>';
-          }).join('')+
-        '</span>'+
-      '</div>'+
-    '</div></div>';
+  // Month grid
+  var year  = calViewDate.getFullYear();
+  var month = calViewDate.getMonth();
+  var RU_MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  var RU_DOW    = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+  var firstDow    = (new Date(year, month, 1).getDay() + 6) % 7; // Mon-based offset
+  var daysInMonth = new Date(year, month+1, 0).getDate();
+  var daysInPrev  = new Date(year, month, 0).getDate();
+  var totalCells  = Math.ceil((firstDow + daysInMonth) / 7) * 7;
+
+  function truncTitle(s) {
+    var words = s.trim().split(/\s+/).slice(0,3).join(' ');
+    return words.length < s.trim().length ? words + '…' : words;
+  }
+
+  var MAX_PILLS = 3;
+  var cellsHtml = '';
+  for (var i=0; i<totalCells; i++) {
+    var dayNum, d;
+    var thisMonth = (i >= firstDow && i < firstDow + daysInMonth);
+    if (i < firstDow) {
+      dayNum = daysInPrev - firstDow + 1 + i;
+      d = new Date(year, month-1, dayNum);
+    } else if (thisMonth) {
+      dayNum = i - firstDow + 1;
+      d = new Date(year, month, dayNum);
+    } else {
+      dayNum = i - firstDow - daysInMonth + 1;
+      d = new Date(year, month+1, dayNum);
+    }
+    var key     = d.toISOString().slice(0,10);
+    var isToday = key === todayStr;
+    var tasks   = calDayData[key] || [];
+    var shown   = tasks.slice(0, MAX_PILLS);
+    var extra   = tasks.length - MAX_PILLS;
+
+    var pills = shown.map(function(t){
+      var color = getMemberColor(t.assignee);
+      return '<div class="gcal-task-pill' + (t.status==='done'?' done-pill':'') + '" style="background:'+color+'"' +
+        ' onmouseenter="showCalTaskTip(event,\''+t.id+'\')" onmouseleave="hideCalTooltip()">' +
+        esc(truncTitle(t.title)) + '</div>';
+    }).join('');
+
+    var cls = 'gcal-cell' + (isToday?' gcal-cell-today':'') + (!thisMonth?' gcal-cell-other':'');
+    cellsHtml += '<div class="'+cls+'">' +
+      '<div class="gcal-cell-num"><span>'+dayNum+'</span></div>' +
+      pills +
+      (extra>0 ? '<div class="gcal-more">+'+extra+' ещё</div>' : '') +
+    '</div>';
+  }
+
+  var dowRow = RU_DOW.map(function(d){ return '<div class="gcal-dow">'+d+'</div>'; }).join('');
+
+  var legendHtml = Object.keys(MEMBER_COLORS).map(function(s){
+    return '<span style="display:flex;align-items:center;gap:4px">' +
+      '<span style="width:8px;height:8px;border-radius:50%;background:'+MEMBER_COLORS[s]+';display:inline-block"></span>' +
+      esc(getMemberName(s))+'</span>';
+  }).join('') +
+  '<span style="display:flex;align-items:center;gap:4px">' +
+    '<span style="width:8px;height:8px;border-radius:50%;background:#50C878;display:inline-block"></span>Другие</span>';
+
+  view.innerHTML =
+    '<div style="padding:24px">' +
+    '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:22px;letter-spacing:.06em;margin-bottom:20px">Календарь команды</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px">' +
+      sCard('Завершено задач', totalDone, 'cg') +
+      sCard('Серия дней', streak, 'ca') +
+      sCard('Всего задач', teamState.tasks.length, 'cp') +
+    '</div>' +
+    '<div class="gcal-wrap">' +
+      '<div class="gcal-header">' +
+        '<button class="gcal-nav" onclick="navCalMonth(-1)">&#8592;</button>' +
+        '<span class="gcal-title">'+RU_MONTHS[month]+' '+year+'</span>' +
+        '<button class="gcal-nav" onclick="navCalMonth(1)">&#8594;</button>' +
+        '<button class="gcal-today-btn" onclick="calToday()">Сегодня</button>' +
+      '</div>' +
+      '<div class="gcal-dow-row">'+dowRow+'</div>' +
+      '<div class="gcal-grid">'+cellsHtml+'</div>' +
+    '</div>' +
+    '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px;font-size:11px;color:var(--text3)">' +
+      legendHtml +
+    '</div>' +
+    '</div>';
 }
 
-function showCalTooltip(e, key) {
-  var entries = calDayData[key];
-  if (!entries || !entries.length) return;
+function showCalTaskTip(e, taskId) {
+  var t = teamState.tasks.find(function(x){ return x.id===taskId; });
+  if (!t) return;
   var tt = document.getElementById('cal-tooltip');
   if (!tt) return;
-  var html = '<div style="font-weight:600;margin-bottom:5px;color:var(--text2)">'+key+'</div>';
-  entries.forEach(function(x){
-    var c = getMemberColor(x.slug);
-    html += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">' +
-      '<span style="width:7px;height:7px;border-radius:50%;background:'+c+';display:inline-block;flex-shrink:0"></span>' +
-      '<span style="color:'+c+';font-weight:500;flex-shrink:0">'+esc(x.name)+'</span>' +
-      '<span style="color:var(--text2)'+(x.done?';text-decoration:line-through':'')+'">' + esc(x.title) + '</span>' +
-    '</div>';
-  });
-  tt.innerHTML = html;
+  var dl = t.deadline ? new Date(t.deadline).toLocaleString('ru',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+  var color = getMemberColor(t.assignee);
+  tt.innerHTML =
+    '<div style="font-weight:600;margin-bottom:6px;color:var(--text)">'+esc(t.title)+'</div>' +
+    '<div style="margin-bottom:2px"><span style="color:'+color+';font-weight:500">'+esc(getMemberName(t.assignee))+'</span>' +
+      ' <span style="color:var(--text3);font-size:10px">← '+esc(getMemberName(t.assigner))+'</span></div>' +
+    '<div style="color:var(--text2);font-size:11px">🗓 '+dl+'</div>';
   tt.style.display = 'block';
   var r = e.currentTarget.getBoundingClientRect();
-  var tx = r.left + r.width/2 - 10;
-  var ty = r.top - 8;
-  if (tx + 250 > window.innerWidth) tx = window.innerWidth - 260;
-  tt.style.left = tx + 'px';
-  tt.style.top  = (ty - tt.offsetHeight) + 'px';
+  var tx = r.left;
+  var ty = r.bottom + 4;
+  if (tx + 230 > window.innerWidth)  tx = window.innerWidth - 238;
+  if (ty + 90  > window.innerHeight) ty = r.top - 94;
+  tt.style.left = Math.max(4, tx) + 'px';
+  tt.style.top  = ty + 'px';
 }
 
 function hideCalTooltip() {
