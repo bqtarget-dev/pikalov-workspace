@@ -447,6 +447,30 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .act.bgt-rep:hover{background:rgba(127,110,245,.15)}
 .act.bgt-del{color:var(--red);border-color:rgba(245,86,86,.2);background:transparent}
 .act.bgt-del:hover{background:rgba(245,86,86,.07)}
+
+/* ── Storage tab ──────────────────────────────────────────────────── */
+.stg-search{flex:1;min-width:180px;max-width:360px;background:var(--bg4);border:.5px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s}
+.stg-search:focus{border-color:var(--accent)}
+.stg-search::placeholder{color:var(--text3)}
+.stg-cat-bar{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px}
+.stg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.stg-card{background:var(--bg2);border:.5px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s}
+.stg-card:hover{border-color:var(--border2)}
+.stg-card-title{font-size:15px;font-weight:500;line-height:1.3;word-break:break-word}
+.stg-card-comment{font-size:12px;color:var(--text2);line-height:1.5;word-break:break-word}
+.stg-cat-badge{display:inline-block;font-size:10px;padding:2px 9px;border-radius:20px;border:.5px solid;white-space:nowrap}
+.stg-cat-Аудитории{color:var(--accent2);border-color:rgba(127,110,245,.3);background:rgba(127,110,245,.07)}
+.stg-cat-Таблицы{color:var(--green);border-color:rgba(62,207,142,.25);background:rgba(62,207,142,.06)}
+.stg-cat-Инструменты{color:var(--amber);border-color:rgba(245,166,35,.25);background:rgba(245,166,35,.06)}
+.stg-cat-Клиенты{color:#6eb8f5;border-color:rgba(110,184,245,.25);background:rgba(110,184,245,.06)}
+.stg-cat-Другое{color:var(--text2);border-color:var(--border2);background:var(--bg4)}
+.stg-card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:2px}
+.stg-open-btn{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:opacity .15s;white-space:nowrap}
+.stg-open-btn:hover{opacity:.85}
+.stg-micro-btns{display:flex;gap:4px}
+.stg-edit-btn,.stg-del-btn{background:transparent;border:.5px solid var(--border2);border-radius:6px;padding:5px 10px;font-family:'DM Sans',sans-serif;font-size:11px;cursor:pointer;transition:all .15s}
+.stg-edit-btn{color:var(--text2)}.stg-edit-btn:hover{color:var(--text);border-color:var(--border)}
+.stg-del-btn{color:var(--red);border-color:rgba(245,86,86,.2)}.stg-del-btn:hover{background:rgba(245,86,86,.07)}
 </style>
 </head>
 <body>
@@ -464,6 +488,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <button class="ntab" onclick="showTab('calendar')">📅 Календарь</button>
 
     <button class="ntab" onclick="showTab('pomodoro')">🍅 Помидоро</button>
+    <button class="ntab" onclick="showTab('storage')">📦 Склад</button>
   </div>
 </div>
 
@@ -560,6 +585,15 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     </div>
   </div>
 </div>
+
+  <div id="view-storage" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <input class="stg-search" id="stg-search" type="text" placeholder="Поиск по названию и комментарию..." oninput="stgRender()" />
+      <button class="add-btn" onclick="stgOpenModal(null)">+ Добавить</button>
+    </div>
+    <div class="stg-cat-bar" id="stg-cat-bar"></div>
+    <div class="stg-grid" id="stg-list"></div>
+  </div>
 
 <!-- Modal: Project -->
 <div class="overlay" id="modal-project">
@@ -837,17 +871,18 @@ function fmtD(s) { return new Date(s).toLocaleDateString('ru',{day:'2-digit',mon
 // ── TABS ──────────────────────────────────────────────────────────────
 function showTab(t) {
   currentTab = t;
-  ['mediaplans','analytics','budgets','team','calendar','pomodoro'].forEach(function(k){
+  ['mediaplans','analytics','budgets','team','calendar','pomodoro','storage'].forEach(function(k){
     document.getElementById('view-'+k).style.display = k===t?'':'none';
   });
   document.querySelectorAll('.ntab:not(.soon)').forEach(function(b,i){
-    b.classList.toggle('active', i===['mediaplans','analytics','budgets','team','calendar','pomodoro'].indexOf(t));
+    b.classList.toggle('active', i===['mediaplans','analytics','budgets','team','calendar','pomodoro','storage'].indexOf(t));
   });
   if (t === 'analytics') renderAnalytics();
   if (t === 'budgets')   bgtRender();
   if (t === 'team')      renderTeam();
   if (t === 'calendar')  renderCalendar();
   if (t === 'pomodoro')  pomoRenderUI();
+  if (t === 'storage')   stgRender();
   if (t !== 'pomodoro')  document.title = 'PIKALOV MEDIA Workspace';
 }
 
@@ -2755,6 +2790,149 @@ document.getElementById('bgt-modal-rep').addEventListener('click', function(e){ 
   el.addEventListener('input', bgtUpdateCommPreview);
   el.addEventListener('change', bgtUpdateCommPreview);
 });
+</script>
+
+<!-- Modal: Storage item -->
+<div class="overlay" id="stg-modal">
+  <div class="modal">
+    <div class="modal-title" id="stg-modal-title">Добавить ссылку</div>
+    <div class="field">
+      <label>Название</label>
+      <input type="text" id="stg-name" placeholder="Название ресурса" />
+    </div>
+    <div class="field">
+      <label>URL</label>
+      <input type="url" id="stg-url" placeholder="https://..." />
+    </div>
+    <div class="field">
+      <label>Категория</label>
+      <select id="stg-cat-sel">
+        <option>Аудитории</option>
+        <option>Таблицы</option>
+        <option>Инструменты</option>
+        <option>Клиенты</option>
+        <option>Другое</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Комментарий</label>
+      <textarea id="stg-comment" placeholder="Описание, детали..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="mcancel" onclick="stgCloseModal()">Отмена</button>
+      <button class="mbtn" onclick="stgSaveItem()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STORAGE ────────────────────────────────────────────────────────────
+var stgState = { items: [], cat: 'all', editId: null };
+var STG_CATS = ['Аудитории','Таблицы','Инструменты','Клиенты','Другое'];
+
+(function stgInit() {
+  try { var d = localStorage.getItem('pm_storage_v1'); if (d) stgState.items = JSON.parse(d); } catch(e) {}
+})();
+
+function stgSave() { localStorage.setItem('pm_storage_v1', JSON.stringify(stgState.items)); }
+
+function stgRender() {
+  var q = (document.getElementById('stg-search').value || '').toLowerCase();
+  var cat = stgState.cat;
+
+  // Cat bar
+  var allCats = ['all'].concat(STG_CATS);
+  document.getElementById('stg-cat-bar').innerHTML = allCats.map(function(c) {
+    var label = c === 'all' ? 'Все' : c;
+    return '<button class="ftab'+(stgState.cat===c?' active':'')+'" onclick="stgSetCat(\''+c+'\')">'+label+'</button>';
+  }).join('');
+
+  // Filter items
+  var items = stgState.items.filter(function(item) {
+    var matchCat = cat === 'all' || item.cat === cat;
+    var matchQ = !q || item.name.toLowerCase().indexOf(q) !== -1 || (item.comment||'').toLowerCase().indexOf(q) !== -1;
+    return matchCat && matchQ;
+  });
+
+  var el = document.getElementById('stg-list');
+  if (!items.length) {
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1">'+(stgState.items.length ? 'Ничего не найдено' : 'Библиотека пуста — добавьте первую ссылку')+'</div>';
+    return;
+  }
+  el.innerHTML = items.map(function(item) {
+    var safeName = item.name.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var safeComment = (item.comment||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var safeUrl = item.url.replace(/"/g,'&quot;');
+    return '<div class="stg-card">' +
+      '<div class="stg-card-title">'+safeName+'</div>' +
+      (safeComment ? '<div class="stg-card-comment">'+safeComment+'</div>' : '') +
+      '<div class="stg-card-foot">' +
+        '<span class="stg-cat-badge stg-cat-'+item.cat+'">'+item.cat+'</span>' +
+        '<div style="display:flex;align-items:center;gap:6px">' +
+          '<div class="stg-micro-btns">' +
+            '<button class="stg-edit-btn" onclick="stgOpenModal(\''+item.id+'\')">✏</button>' +
+            '<button class="stg-del-btn" onclick="stgDelete(\''+item.id+'\')">✕</button>' +
+          '</div>' +
+          '<button class="stg-open-btn" onclick="window.open(\''+safeUrl+'\',\'_blank\')">Открыть ссылку ↗</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function stgSetCat(c) { stgState.cat = c; stgRender(); }
+
+function stgOpenModal(id) {
+  stgState.editId = id;
+  document.getElementById('stg-modal-title').textContent = id ? 'Редактировать' : 'Добавить ссылку';
+  if (id) {
+    var item = stgState.items.find(function(i){ return i.id===id; });
+    if (!item) return;
+    document.getElementById('stg-name').value = item.name;
+    document.getElementById('stg-url').value = item.url;
+    document.getElementById('stg-cat-sel').value = item.cat;
+    document.getElementById('stg-comment').value = item.comment||'';
+  } else {
+    document.getElementById('stg-name').value = '';
+    document.getElementById('stg-url').value = '';
+    document.getElementById('stg-cat-sel').value = 'Аудитории';
+    document.getElementById('stg-comment').value = '';
+  }
+  document.getElementById('stg-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('stg-name').focus(); }, 60);
+}
+
+function stgCloseModal() { document.getElementById('stg-modal').classList.remove('open'); }
+
+function stgSaveItem() {
+  var name = document.getElementById('stg-name').value.trim();
+  var url = document.getElementById('stg-url').value.trim();
+  var cat = document.getElementById('stg-cat-sel').value;
+  var comment = document.getElementById('stg-comment').value.trim();
+  if (!name) { stgFlash('stg-name'); return; }
+  if (!url) { stgFlash('stg-url'); return; }
+  if (stgState.editId) {
+    var item = stgState.items.find(function(i){ return i.id===stgState.editId; });
+    if (item) { item.name=name; item.url=url; item.cat=cat; item.comment=comment; }
+  } else {
+    stgState.items.unshift({ id:'stg_'+Date.now(), name:name, url:url, cat:cat, comment:comment });
+  }
+  stgSave(); stgCloseModal(); stgRender();
+}
+
+function stgDelete(id) {
+  if (!confirm('Удалить ссылку?')) return;
+  stgState.items = stgState.items.filter(function(i){ return i.id!==id; });
+  stgSave(); stgRender();
+}
+
+function stgFlash(id) {
+  var el = document.getElementById(id);
+  el.style.borderColor = 'var(--red)';
+  setTimeout(function(){ el.style.borderColor=''; }, 1000);
+}
+
+document.getElementById('stg-modal').addEventListener('click', function(e){ if(e.target===this) stgCloseModal(); });
 </script>
 </body>
 </html>
