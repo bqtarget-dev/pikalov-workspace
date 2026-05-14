@@ -1529,6 +1529,7 @@ function _renderTeam() {
     var online = st.status === 'online';
 
     var memberTasks = teamState.tasks.filter(function(t){
+        // No deadline → always visible. Future deadline → hidden until that day arrives.
         return t.assignee === m.slug && (!t.deadline || t.deadline.slice(0,10) <= today);
       }).sort(function(a,b){
         if(a.deadline&&b.deadline) return a.deadline<b.deadline?-1:a.deadline>b.deadline?1:0;
