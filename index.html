@@ -3238,7 +3238,12 @@ async function vkcSyncCampaigns() {
     vkcState.campaigns = allCamps.map(function(c){ return {id: String(c.id), name: c.name}; });
     localStorage.setItem('vkc_campaigns', JSON.stringify(vkcState.campaigns));
     vkcRenderCampList();
-    vkcStatus('Загружено ' + vkcState.campaigns.length + ' кампаний ✓', 4000);
+    vkcStatus('Загружено ' + vkcState.campaigns.length + ' кампаний, получаю bid...');
+    var ok = await vkcSaveToServer();
+    var bid = localStorage.getItem('jsonbin_bid') || '';
+    console.log('[vkcSync] saveToServer:', ok, '| bid:', bid);
+    vkcStatus('Загружено ' + vkcState.campaigns.length + ' кампаний' + (bid ? ' · bid: ' + bid : '') + (ok ? ' ✓' : ' (ошибка сервера)'), 6000);
+    vkcRenderClients();
   } catch(e) { vkcStatus('Ошибка: ' + e.message); }
 }
 
@@ -3306,24 +3311,34 @@ async function vkcSaveToServer() {
       .filter(function(c){ return usedIds.has(c.id); })
       .map(function(c){ return {id: c.id, name: c.name, spent: 0, plays: 0, cpa_play: 0}; });
     var payload = {clients: vkcState.clients, campaigns: slimCamps, bid: vkcState.bid, vk_token: vkcState.token || ''};
+    console.log('[vkcSaveToServer] POST bid:', payload.bid, '| clients:', vkcState.clients.length, '| camps:', slimCamps.length);
     var res = await fetch(VKC_API + '/api/clients', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
     });
     var data = await res.json();
-    if (data.bin_id) { vkcState.bid = data.bin_id; localStorage.setItem('jsonbin_bid', data.bin_id); vkcRenderClients(); }
+    console.log('[vkcSaveToServer] response', res.status, JSON.stringify(data));
+    if (data.bin_id) {
+      vkcState.bid = data.bin_id;
+      localStorage.setItem('jsonbin_bid', data.bin_id);
+      console.log('[vkcSaveToServer] bid сохранён в localStorage:', data.bin_id);
+      vkcRenderClients();
+    }
     if (data.created) {
       payload.bid = data.bin_id;
+      console.log('[vkcSaveToServer] bin создан, повторный POST с bid:', data.bin_id);
       var res2 = await fetch(VKC_API + '/api/clients', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload)
       });
+      var data2 = await res2.json();
+      console.log('[vkcSaveToServer] retry response', res2.status, JSON.stringify(data2));
       return res2.ok;
     }
     return res.ok;
-  } catch(e) { return false; }
+  } catch(e) { console.error('[vkcSaveToServer] error:', e.message); return false; }
 }
 
 async function vkcLoadFromServer() {
@@ -3373,6 +3388,8 @@ function vkcRenderClients() {
 }
 
 function vkcCopyLink(url, btnId) {
+  var bid = localStorage.getItem('jsonbin_bid') || vkcState.bid;
+  console.log('[vkcCopyLink] url:', url, '| bid в localStorage:', bid, '| vkcState.bid:', vkcState.bid);
   navigator.clipboard.writeText(url).catch(function(){});
   var btn = document.getElementById(btnId);
   if (!btn) return;
