@@ -489,6 +489,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .vkc-token-inp{font-family:monospace;font-size:12px}
 .vkc-sync-btn{padding:8px 14px;border-radius:8px;border:.5px solid rgba(127,110,245,.3);background:rgba(127,110,245,.12);color:var(--accent2);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
 .vkc-sync-btn:hover{background:rgba(127,110,245,.22)}
+.vkc-reset-btn{padding:8px 14px;border-radius:8px;border:.5px solid rgba(245,86,86,.3);background:rgba(245,86,86,.08);color:var(--red);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.vkc-reset-btn:hover{background:rgba(245,86,86,.16)}
 .vkc-status{font-size:11px;color:var(--text3);margin-top:6px}
 .vkc-dot{width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block;margin-right:5px;vertical-align:middle}
 .vkc-dot.on{background:var(--green)}
@@ -507,7 +509,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .vkc-client-card{background:var(--bg2);border:.5px solid var(--border);border-radius:12px;padding:16px 18px}
 .vkc-client-name{font-size:14px;font-weight:500;margin-bottom:8px}
 .vkc-link-row{display:flex;align-items:center;gap:8px;background:var(--bg4);border-radius:8px;padding:7px 12px;border:.5px solid var(--border);margin-bottom:8px}
-.vkc-link-text{font-size:11px;color:var(--accent2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace}
+.vkc-link-input{flex:1;min-width:0;background:transparent;border:none;outline:none;font-size:11px;color:var(--accent2);font-family:monospace;cursor:text;padding:0}
 .vkc-copy-btn{font-size:11px;color:var(--text2);background:var(--bg3);border:.5px solid var(--border2);border-radius:6px;padding:4px 10px;cursor:pointer;white-space:nowrap;transition:all .15s}
 .vkc-copy-btn:hover{color:#fff;border-color:var(--accent)}
 .vkc-copy-btn.copied{color:var(--green);border-color:var(--green)}
@@ -651,6 +653,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
         <input class="vkc-inp vkc-token-inp" type="password" id="vkc-token-inp" placeholder="Вставь access_token из VK..." />
         <button class="add-btn" onclick="vkcSaveToken()">Сохранить</button>
         <button class="vkc-sync-btn" onclick="vkcSyncCampaigns()">↻ Загрузить кампании из VK</button>
+        <button class="vkc-reset-btn" onclick="vkcResetToken()">✕ Сбросить токен и кампании</button>
       </div>
       <div class="vkc-status" id="vkc-sync-status"></div>
     </div>
@@ -3205,6 +3208,20 @@ async function vkcRequest(method, params) {
   return resp.json();
 }
 
+function vkcResetToken() {
+  if (!confirm('Сбросить токен и кампании? Клиенты сохранятся.')) return;
+  vkcState.token = '';
+  vkcState.campaigns = [];
+  vkcState.selectedCamps.clear();
+  localStorage.removeItem('vk_token');
+  localStorage.removeItem('vkc_campaigns');
+  document.getElementById('vkc-dot').classList.remove('on');
+  document.getElementById('vkc-status-text').textContent = 'Не подключено';
+  document.getElementById('vkc-selected-count').textContent = '';
+  vkcRenderCampList();
+  vkcStatus('Сброшено ✓', 2000);
+}
+
 async function vkcSyncCampaigns() {
   if (!vkcState.token) { vkcStatus('Сначала введи токен'); return; }
   vkcStatus('Загружаю кампании...');
@@ -3345,8 +3362,8 @@ function vkcRenderClients() {
         '<div style="font-size:10px;color:var(--text2);background:var(--bg4);padding:2px 8px;border-radius:10px;border:.5px solid var(--border)">'+cnt+' кампани'+suf+'</div>' +
       '</div>' +
       '<div class="vkc-link-row">' +
-        '<span class="vkc-link-text">?client='+vkcEsc(cl.token)+'</span>' +
-        '<button class="vkc-copy-btn" id="'+btnId+'" onclick="vkcCopyLink(\''+vkcEsc(url)+'\',\''+btnId+'\')">Скопировать ссылку</button>' +
+        '<input class="vkc-link-input" readonly value="'+vkcEsc(url)+'" onclick="this.select()" />' +
+        '<button class="vkc-copy-btn" id="'+btnId+'" onclick="vkcCopyLink(\''+vkcEsc(url)+'\',\''+btnId+'\')">Скопировать</button>' +
       '</div>' +
       '<div class="vkc-camp-tags">'+campNames.map(function(n){ return '<span class="vkc-camp-tag">'+vkcEsc(n)+'</span>'; }).join('')+'</div>' +
       '<button class="vkc-del-btn" onclick="vkcDeleteClient(\''+cl.id+'\')">Удалить</button>' +
