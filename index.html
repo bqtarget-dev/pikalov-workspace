@@ -465,19 +465,18 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .stg-edit-btn{color:var(--text2)}.stg-edit-btn:hover{color:var(--text);border-color:var(--border)}
 .stg-del-btn{color:var(--red);border-color:rgba(245,86,86,.2)}.stg-del-btn:hover{background:rgba(245,86,86,.07)}
 .stg-move-btn{color:var(--text3)}.stg-move-btn:hover{color:var(--text2);border-color:var(--border)}
-.stg-sec-wrap{border:.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px}
-.stg-sec-header{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--bg2);cursor:pointer;user-select:none;transition:background .15s}
-.stg-sec-header:hover{background:var(--bg3)}
-.stg-sec-arrow{font-size:10px;color:var(--text3);transition:transform .2s;flex-shrink:0;width:14px;text-align:center;line-height:1}
-.stg-sec-arrow.open{transform:rotate(90deg)}
-.stg-sec-name-lbl{font-size:14px;font-weight:500;flex:1}
-.stg-sec-count{font-size:10px;color:var(--text3);background:var(--bg4);border:.5px solid var(--border);border-radius:12px;padding:1px 8px;flex-shrink:0}
-.stg-sec-btns{display:flex;gap:4px;flex-shrink:0}
-.stg-sec-btn{background:transparent;border:.5px solid var(--border2);border-radius:5px;padding:3px 8px;font-size:11px;color:var(--text3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
-.stg-sec-btn:hover{color:var(--text);border-color:var(--border)}
-.stg-sec-btn.sdel:hover{color:var(--red);border-color:rgba(245,86,86,.3)}
-.stg-sec-body{display:none;padding:12px 16px;background:var(--bg);border-top:.5px solid var(--border)}
-.stg-sec-body.open{display:block}
+.stg-tab-bar{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:.5px solid var(--border)}
+.stg-tab{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:8px;border:.5px solid transparent;background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.stg-tab:hover{color:var(--text);background:var(--bg3)}
+.stg-tab.active{background:#7f6ef5;color:#fff;border-color:#7f6ef5}
+.stg-tab-count{font-size:10px;color:var(--text3);background:var(--bg4);border:.5px solid var(--border);border-radius:10px;padding:0 6px;line-height:16px}
+.stg-tab.active .stg-tab-count{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.25);color:rgba(255,255,255,.75)}
+.stg-tab-acts{display:inline-flex;align-items:center;gap:2px;margin-left:2px}
+.stg-tab-act{font-size:10px;padding:1px 4px;border-radius:3px;color:rgba(255,255,255,.45);transition:color .15s;cursor:pointer;line-height:1}
+.stg-tab-act:hover{color:#fff}
+.stg-tab-act.sdel:hover{color:var(--red)}
+.stg-tab-add-sec{padding:5px 11px;border-radius:8px;border:.5px solid var(--border2);background:transparent;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:11px;cursor:pointer;transition:all .15s;white-space:nowrap;margin-left:2px}
+.stg-tab-add-sec:hover{color:var(--text2);border-color:var(--border)}
 .stg-sec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
 .stg-add-here{background:transparent;border:.5px dashed var(--border2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text3);cursor:pointer;transition:all .15s;width:100%;font-family:'DM Sans',sans-serif;text-align:left}
 .stg-add-here:hover{border-color:var(--accent);color:var(--accent2)}
@@ -597,13 +596,11 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 </div>
 
   <div id="view-storage" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
       <input class="stg-search" id="stg-search" type="text" placeholder="Поиск по названию и комментарию..." oninput="stgRender()" />
-      <div style="display:flex;gap:6px">
-        <button class="add-btn" style="background:var(--bg3);color:var(--text2);border:.5px solid var(--border2);font-size:12px" onclick="stgOpenSecModal(null)">+ Раздел</button>
-        <button class="add-btn" onclick="stgOpenModal(null,null)">+ Добавить</button>
-      </div>
+      <button class="add-btn" onclick="stgOpenModal(null,null)">+ Добавить</button>
     </div>
+    <div class="stg-tab-bar" id="stg-tab-bar"></div>
     <div id="stg-list"></div>
   </div>
 
@@ -2872,7 +2869,7 @@ var STG_PALETTE = [
   {c:'var(--text2)',b:'var(--border2)',bg:'var(--bg4)'}
 ];
 var STG_DEFAULT_SECS = ['Аудитории','Таблицы','Инструменты','Клиенты','Другое'];
-var stgState = { sections:[], items:[], editId:null, editSecId:null, moveItemId:null, openSecs:{} };
+var stgState = { sections:[], items:[], editId:null, editSecId:null, moveItemId:null, activeSec:null };
 
 (function stgInit() {
   try {
@@ -2889,7 +2886,7 @@ var stgState = { sections:[], items:[], editId:null, editSecId:null, moveItemId:
       stgState.sections.push({id:'sec_'+n.replace(/\s/g,'_'), name:n});
     });
   }
-  stgState.sections.forEach(function(s){ stgState.openSecs[s.id] = true; });
+  stgState.activeSec = stgState.sections[0] ? stgState.sections[0].id : null;
 })();
 
 function stgMigrate(arr) {
@@ -2911,7 +2908,28 @@ function stgPal(idx) { return STG_PALETTE[((idx%STG_PALETTE.length)+STG_PALETTE.
 function stgRender() {
   var q = (document.getElementById('stg-search').value||'').toLowerCase();
   var el = document.getElementById('stg-list');
+  var tb = document.getElementById('stg-tab-bar');
 
+  // Tab bar (always visible)
+  tb.innerHTML = stgState.sections.map(function(sec){
+    var isActive = sec.id === stgState.activeSec;
+    var cnt = stgState.items.filter(function(i){ return i.sectionId===sec.id; }).length;
+    var canDel = cnt === 0;
+    var acts = isActive
+      ? '<span class="stg-tab-acts" onclick="event.stopPropagation()">' +
+          '<span class="stg-tab-act" onclick="stgOpenSecModal(\''+sec.id+'\')" title="Переименовать">✏</span>' +
+          (canDel ? '<span class="stg-tab-act sdel" onclick="stgDeleteSec(\''+sec.id+'\')" title="Удалить">✕</span>' : '') +
+        '</span>'
+      : '';
+    return '<button class="stg-tab'+(isActive?' active':'')+'" onclick="stgSetSec(\''+sec.id+'\')">' +
+      stgEsc(sec.name) +
+      '<span class="stg-tab-count">'+cnt+'</span>' +
+      acts +
+    '</button>';
+  }).join('') +
+  '<button class="stg-tab-add-sec" onclick="stgOpenSecModal(null)">+ Раздел</button>';
+
+  // Content
   if (q) {
     var results = stgState.items.filter(function(item){
       return item.name.toLowerCase().indexOf(q)!==-1 || (item.comment||'').toLowerCase().indexOf(q)!==-1;
@@ -2925,29 +2943,16 @@ function stgRender() {
     return;
   }
 
-  if (!stgState.sections.length) { el.innerHTML='<div class="empty">Нет разделов — создайте первый</div>'; return; }
-  el.innerHTML = stgState.sections.map(function(sec, idx){
-    var pal = stgPal(idx);
-    var secItems = stgState.items.filter(function(i){ return i.sectionId===sec.id; });
-    var isOpen = !!stgState.openSecs[sec.id];
-    var canDel = secItems.length === 0;
-    var header = '<div class="stg-sec-header" onclick="stgToggleSec(\''+sec.id+'\')">' +
-      '<span class="stg-sec-arrow'+(isOpen?' open':'')+'">▶</span>' +
-      '<span class="stg-sec-name-lbl" style="color:'+pal.c+'">'+stgEsc(sec.name)+'</span>' +
-      '<span class="stg-sec-count">'+secItems.length+'</span>' +
-      '<div class="stg-sec-btns" onclick="event.stopPropagation()">' +
-        '<button class="stg-sec-btn" onclick="stgOpenSecModal(\''+sec.id+'\')">✏</button>' +
-        (canDel ? '<button class="stg-sec-btn sdel" onclick="stgDeleteSec(\''+sec.id+'\')">✕</button>' : '') +
-      '</div>' +
-    '</div>';
-    var body = '<div class="stg-sec-body'+(isOpen?' open':'')+'" id="stg-body-'+sec.id+'">' +
-      '<div class="stg-sec-grid">' +
-        secItems.map(function(item){ return stgCardHtml(item, pal, ''); }).join('') +
-        '<button class="stg-add-here" onclick="stgOpenModal(\'__new__\',\''+sec.id+'\')">+ Добавить в «'+stgEsc(sec.name)+'»</button>' +
-      '</div>' +
-    '</div>';
-    return '<div class="stg-sec-wrap">'+header+body+'</div>';
-  }).join('');
+  if (!stgState.activeSec) { el.innerHTML='<div class="empty">Нет разделов — создайте первый</div>'; return; }
+  var activeSec = stgState.sections.find(function(s){ return s.id===stgState.activeSec; });
+  if (!activeSec) { stgState.activeSec = stgState.sections[0] ? stgState.sections[0].id : null; stgRender(); return; }
+  var idx = stgState.sections.findIndex(function(s){ return s.id===activeSec.id; });
+  var pal = stgPal(idx);
+  var secItems = stgState.items.filter(function(i){ return i.sectionId===activeSec.id; });
+  el.innerHTML = '<div class="stg-sec-grid">' +
+    secItems.map(function(item){ return stgCardHtml(item, pal, ''); }).join('') +
+    '<button class="stg-add-here" onclick="stgOpenModal(\'__new__\',\''+activeSec.id+'\')">+ Добавить в «'+stgEsc(activeSec.name)+'»</button>' +
+  '</div>';
 }
 
 function stgCardHtml(item, pal, secLabel) {
@@ -2972,13 +2977,9 @@ function stgCardHtml(item, pal, secLabel) {
   '</div>';
 }
 
-function stgToggleSec(id) {
-  stgState.openSecs[id] = !stgState.openSecs[id];
-  var body = document.getElementById('stg-body-'+id);
-  if (!body) return;
-  body.classList.toggle('open', !!stgState.openSecs[id]);
-  var arrow = body.previousElementSibling && body.previousElementSibling.querySelector('.stg-sec-arrow');
-  if (arrow) arrow.classList.toggle('open', !!stgState.openSecs[id]);
+function stgSetSec(id) {
+  stgState.activeSec = id;
+  stgRender();
 }
 
 // Section modal
@@ -3000,7 +3001,7 @@ function stgSaveSec() {
   } else {
     var newId = 'sec_'+Date.now();
     stgState.sections.push({id:newId, name:name});
-    stgState.openSecs[newId] = true;
+    stgState.activeSec = newId;
   }
   stgSave(); stgCloseSecModal(); stgRender();
 }
@@ -3008,6 +3009,7 @@ function stgDeleteSec(id) {
   if (stgState.items.some(function(i){ return i.sectionId===id; })) { alert('Нельзя удалить раздел с ссылками'); return; }
   if (!confirm('Удалить пустой раздел?')) return;
   stgState.sections = stgState.sections.filter(function(s){ return s.id!==id; });
+  if (stgState.activeSec === id) stgState.activeSec = stgState.sections[0] ? stgState.sections[0].id : null;
   stgSave(); stgRender();
 }
 
