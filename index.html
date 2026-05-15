@@ -643,36 +643,18 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
   </div>
 
   <div id="view-vkclient" style="display:none">
-    <!-- Token + sync -->
     <div class="vkc-section">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div class="vkc-sec-title" style="margin:0">VK Ads API</div>
-        <div style="font-size:12px;color:var(--text2)"><span class="vkc-dot" id="vkc-dot"></span><span id="vkc-status-text">Не подключено</span></div>
-      </div>
-      <div class="vkc-row">
-        <input class="vkc-inp vkc-token-inp" type="password" id="vkc-token-inp" placeholder="Вставь access_token из VK..." />
-        <button class="add-btn" onclick="vkcSaveToken()">Сохранить</button>
-        <button class="vkc-sync-btn" onclick="vkcSyncCampaigns()">↻ Загрузить кампании из VK</button>
-        <button class="vkc-reset-btn" onclick="vkcResetToken()">✕ Сбросить токен и кампании</button>
-      </div>
-      <div class="vkc-status" id="vkc-sync-status"></div>
+      <div class="vkc-sec-title">Панель клиентов</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Управление клиентами и генерация ссылок — в отдельном дашборде.</p>
+      <button class="add-btn" style="font-size:13px;padding:10px 20px" onclick="window.open('https://pikalov-media-dashboard.vercel.app','_blank')">↗ Открыть панель клиентов</button>
     </div>
-    <!-- New client -->
     <div class="vkc-section">
-      <div class="vkc-sec-title">Новый клиент</div>
+      <div class="vkc-sec-title">Проверить ссылку клиента</div>
       <div class="vkc-row">
-        <input class="vkc-inp" type="text" id="vkc-client-name" placeholder="Имя клиента / менеджера" />
-        <button class="add-btn" onclick="vkcCreateClient()">Создать клиента</button>
+        <input class="vkc-inp" type="text" id="vkc-check-url" placeholder="Вставь ссылку клиента..." />
+        <button class="vkc-sync-btn" onclick="vkcCheckLink()">Проверить</button>
       </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <input class="vkc-inp" type="text" id="vkc-camp-search" placeholder="Поиск кампании..." oninput="vkcFilterCamps()" style="margin:0;font-size:12px" />
-        <span style="font-size:11px;color:var(--accent2);font-weight:500;white-space:nowrap" id="vkc-selected-count"></span>
-      </div>
-      <div class="vkc-camp-list" id="vkc-camp-list"></div>
     </div>
-    <!-- Clients list -->
-    <div class="vkc-sec-title" style="margin-bottom:12px">Клиенты</div>
-    <div class="vkc-clients-grid" id="vkc-clients-grid"></div>
   </div>
 
 <!-- Modal: Project -->
@@ -3166,254 +3148,12 @@ document.getElementById('stg-move-modal').addEventListener('click', function(e){
 
 <script>
 // ── VK CLIENTS ──────────────────────────────────────────────────────────
-var VKC_API = 'https://pikalov-media-dashboard.vercel.app';
-var vkcState = {token:'', bid:'', campaigns:[], clients:[], selectedCamps:new Set(), accountId:'26407151'};
-
-(function vkcInit() {
-  try {
-    vkcState.token = localStorage.getItem('vk_token') || '';
-    vkcState.bid   = localStorage.getItem('jsonbin_bid') || '';
-    var camps   = localStorage.getItem('vkc_campaigns');
-    var clients = localStorage.getItem('vkc_clients');
-    if (camps)   vkcState.campaigns = JSON.parse(camps);
-    if (clients) vkcState.clients   = JSON.parse(clients);
-  } catch(e) {}
-})();
-
-function vkcEsc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function vkcGenToken() { return 'pm-' + Math.random().toString(36).substr(2,6) + '-' + Math.random().toString(36).substr(2,4); }
-
-function vkcStatus(msg, clearMs) {
-  var el = document.getElementById('vkc-sync-status');
-  if (!el) return;
-  el.textContent = msg;
-  if (clearMs) setTimeout(function(){ el.textContent = ''; }, clearMs);
+function vkcCheckLink() {
+  var url = (document.getElementById('vkc-check-url').value || '').trim();
+  if (!url) return;
+  window.open(url, '_blank');
 }
-
-function vkcSaveToken() {
-  var t = document.getElementById('vkc-token-inp').value.trim();
-  if (!t) return;
-  vkcState.token = t;
-  localStorage.setItem('vk_token', t);
-  document.getElementById('vkc-token-inp').value = '';
-  document.getElementById('vkc-dot').classList.add('on');
-  document.getElementById('vkc-status-text').textContent = 'Подключено';
-  vkcStatus('Токен сохранён ✓', 2000);
-}
-
-async function vkcRequest(method, params) {
-  var p = Object.assign({}, params, {access_token: vkcState.token});
-  var q = new URLSearchParams(p).toString();
-  var resp = await fetch(VKC_API + '/api/vk?path=' + method + '&' + q);
-  return resp.json();
-}
-
-function vkcResetToken() {
-  if (!confirm('Сбросить токен и кампании? Клиенты сохранятся.')) return;
-  vkcState.token = '';
-  vkcState.campaigns = [];
-  vkcState.selectedCamps.clear();
-  localStorage.removeItem('vk_token');
-  localStorage.removeItem('vkc_campaigns');
-  document.getElementById('vkc-dot').classList.remove('on');
-  document.getElementById('vkc-status-text').textContent = 'Не подключено';
-  document.getElementById('vkc-selected-count').textContent = '';
-  vkcRenderCampList();
-  vkcStatus('Сброшено ✓', 2000);
-}
-
-async function vkcSyncCampaigns() {
-  if (!vkcState.token) { vkcStatus('Сначала введи токен'); return; }
-  vkcStatus('Загружаю кампании...');
-  try {
-    var allCamps = [], offset = 0, total = 999;
-    while (allCamps.length < total) {
-      var data = await vkcRequest('ad_plans', {account_id: vkcState.accountId, limit: 100, offset: offset});
-      if (!data.items) break;
-      total = data.count;
-      allCamps = allCamps.concat(data.items);
-      offset += 100;
-      if (data.items.length < 100) break;
-    }
-    vkcState.campaigns = allCamps.map(function(c){ return {id: String(c.id), name: c.name}; });
-    localStorage.setItem('vkc_campaigns', JSON.stringify(vkcState.campaigns));
-    vkcRenderCampList();
-    vkcStatus('Загружено ' + vkcState.campaigns.length + ' кампаний, получаю bid...');
-    var ok = await vkcSaveToServer();
-    var bid = localStorage.getItem('jsonbin_bid') || '';
-    console.log('[vkcSync] saveToServer:', ok, '| bid:', bid);
-    vkcStatus('Загружено ' + vkcState.campaigns.length + ' кампаний' + (bid ? ' · bid: ' + bid : '') + (ok ? ' ✓' : ' (ошибка сервера)'), 6000);
-    vkcRenderClients();
-  } catch(e) { vkcStatus('Ошибка: ' + e.message); }
-}
-
-function vkcRenderCampList() {
-  var list = document.getElementById('vkc-camp-list');
-  if (!list) return;
-  if (!vkcState.campaigns.length) {
-    list.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">Загрузи кампании из VK</div>';
-    return;
-  }
-  var q = (document.getElementById('vkc-camp-search').value||'').toLowerCase();
-  list.innerHTML = vkcState.campaigns.filter(function(c){
-    return !q || c.name.toLowerCase().indexOf(q) !== -1;
-  }).map(function(c){
-    var chk = vkcState.selectedCamps.has(c.id);
-    return '<div class="vkc-camp-item'+(chk?' checked':'')+'" onclick="vkcToggleCamp(\''+c.id+'\')">' +
-      '<div class="vkc-camp-check"><div class="vkc-check-inner"></div></div>' +
-      '<span class="vkc-camp-name">'+vkcEsc(c.name)+'</span></div>';
-  }).join('');
-}
-
-function vkcFilterCamps() { vkcRenderCampList(); }
-
-function vkcToggleCamp(id) {
-  if (vkcState.selectedCamps.has(id)) vkcState.selectedCamps.delete(id);
-  else vkcState.selectedCamps.add(id);
-  vkcRenderCampList();
-  var cnt = vkcState.selectedCamps.size;
-  document.getElementById('vkc-selected-count').textContent = cnt ? 'Выбрано: ' + cnt : '';
-}
-
-async function vkcCreateClient() {
-  var name = document.getElementById('vkc-client-name').value.trim();
-  if (!name) {
-    var inp = document.getElementById('vkc-client-name');
-    inp.style.borderColor = 'var(--red)';
-    setTimeout(function(){ inp.style.borderColor = ''; }, 1000);
-    return;
-  }
-  if (!vkcState.selectedCamps.size) { alert('Выбери хотя бы одну кампанию'); return; }
-  var client = {id: 'cl'+Date.now(), name: name, token: vkcGenToken(), campaigns: Array.from(vkcState.selectedCamps)};
-  vkcState.clients.push(client);
-  document.getElementById('vkc-client-name').value = '';
-  vkcState.selectedCamps.clear();
-  document.getElementById('vkc-selected-count').textContent = '';
-  vkcSaveLocal();
-  vkcRenderClients();
-  vkcRenderCampList();
-  vkcStatus('Сохраняю на сервер...');
-  var ok = await vkcSaveToServer();
-  vkcRenderClients(); // перерисовываем — bid мог обновиться после ответа сервера
-  vkcStatus(ok ? 'Клиент создан и сохранён ✓' : 'Клиент создан (ошибка сервера)', ok ? 3000 : 0);
-}
-
-function vkcSaveLocal() {
-  localStorage.setItem('vkc_clients', JSON.stringify(vkcState.clients));
-  if (vkcState.bid) localStorage.setItem('jsonbin_bid', vkcState.bid);
-}
-
-async function vkcSaveToServer() {
-  try {
-    var usedIds = new Set();
-    vkcState.clients.forEach(function(cl){ cl.campaigns.forEach(function(id){ usedIds.add(id); }); });
-    var slimCamps = vkcState.campaigns
-      .filter(function(c){ return usedIds.has(c.id); })
-      .map(function(c){ return {id: c.id, name: c.name, spent: 0, plays: 0, cpa_play: 0}; });
-    var payload = {clients: vkcState.clients, campaigns: slimCamps, bid: vkcState.bid, vk_token: vkcState.token || ''};
-    console.log('[vkcSaveToServer] POST bid:', payload.bid, '| clients:', vkcState.clients.length, '| camps:', slimCamps.length);
-    var res = await fetch(VKC_API + '/api/clients', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload)
-    });
-    var data = await res.json();
-    console.log('[vkcSaveToServer] response', res.status, JSON.stringify(data));
-    if (data.bin_id) {
-      vkcState.bid = data.bin_id;
-      localStorage.setItem('jsonbin_bid', data.bin_id);
-      console.log('[vkcSaveToServer] bid сохранён в localStorage:', data.bin_id);
-      vkcRenderClients();
-    }
-    if (data.created) {
-      payload.bid = data.bin_id;
-      console.log('[vkcSaveToServer] bin создан, повторный POST с bid:', data.bin_id);
-      var res2 = await fetch(VKC_API + '/api/clients', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-      });
-      var data2 = await res2.json();
-      console.log('[vkcSaveToServer] retry response', res2.status, JSON.stringify(data2));
-      return res2.ok;
-    }
-    return res.ok;
-  } catch(e) { console.error('[vkcSaveToServer] error:', e.message); return false; }
-}
-
-async function vkcLoadFromServer() {
-  var bid = vkcState.bid;
-  if (!bid) return;
-  try {
-    var res = await fetch(VKC_API + '/api/clients?bid=' + encodeURIComponent(bid));
-    if (!res.ok) return;
-    var data = await res.json();
-    if (data.clients) {
-      vkcState.clients = data.clients;
-      vkcSaveLocal();
-    }
-  } catch(e) {}
-}
-
-function vkcRenderClients() {
-  var grid = document.getElementById('vkc-clients-grid');
-  if (!grid) return;
-  if (!vkcState.clients.length) {
-    grid.innerHTML = '<div class="empty">Клиентов пока нет — создай первого выше</div>';
-    return;
-  }
-  var bid = localStorage.getItem('jsonbin_bid') || vkcState.bid;
-  grid.innerHTML = vkcState.clients.map(function(cl) {
-    var url = 'https://pikalov-media-dashboard.vercel.app/?client=' + cl.token + (bid ? '&bid=' + encodeURIComponent(bid) : '');
-    var cnt = cl.campaigns.length;
-    var suf = cnt===1?'я':cnt<5?'и':'й';
-    var campNames = cl.campaigns.map(function(cid){
-      var c = vkcState.campaigns.find(function(x){ return x.id===cid; });
-      return c ? c.name : cid;
-    });
-    var btnId = 'vkc-copy-' + cl.id;
-    return '<div class="vkc-client-card">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
-        '<div class="vkc-client-name">'+vkcEsc(cl.name)+'</div>' +
-        '<div style="font-size:10px;color:var(--text2);background:var(--bg4);padding:2px 8px;border-radius:10px;border:.5px solid var(--border)">'+cnt+' кампани'+suf+'</div>' +
-      '</div>' +
-      '<div class="vkc-link-row">' +
-        '<input class="vkc-link-input" readonly value="'+vkcEsc(url)+'" onclick="this.select()" />' +
-        '<button class="vkc-copy-btn" id="'+btnId+'" onclick="vkcCopyLink(\''+vkcEsc(url)+'\',\''+btnId+'\')">Скопировать</button>' +
-      '</div>' +
-      '<div class="vkc-camp-tags">'+campNames.map(function(n){ return '<span class="vkc-camp-tag">'+vkcEsc(n)+'</span>'; }).join('')+'</div>' +
-      '<button class="vkc-del-btn" onclick="vkcDeleteClient(\''+cl.id+'\')">Удалить</button>' +
-    '</div>';
-  }).join('');
-}
-
-function vkcCopyLink(url, btnId) {
-  var bid = localStorage.getItem('jsonbin_bid') || vkcState.bid;
-  console.log('[vkcCopyLink] url:', url, '| bid в localStorage:', bid, '| vkcState.bid:', vkcState.bid);
-  navigator.clipboard.writeText(url).catch(function(){});
-  var btn = document.getElementById(btnId);
-  if (!btn) return;
-  btn.textContent = 'Скопировано!';
-  btn.classList.add('copied');
-  setTimeout(function(){ btn.textContent = 'Скопировать ссылку'; btn.classList.remove('copied'); }, 2000);
-}
-
-async function vkcDeleteClient(id) {
-  if (!confirm('Удалить клиента?')) return;
-  vkcState.clients = vkcState.clients.filter(function(c){ return c.id !== id; });
-  vkcSaveLocal();
-  vkcRenderClients();
-  await vkcSaveToServer();
-}
-
-function vkcRender() {
-  var dot = document.getElementById('vkc-dot');
-  var stxt = document.getElementById('vkc-status-text');
-  if (dot)  dot.classList.toggle('on', !!vkcState.token);
-  if (stxt) stxt.textContent = vkcState.token ? 'Подключено' : 'Не подключено';
-  vkcRenderCampList();
-  vkcRenderClients();
-}
+function vkcRender() {}
 </script>
 </body>
 </html>
