@@ -3289,6 +3289,7 @@ async function vkcCreateClient() {
   vkcRenderCampList();
   vkcStatus('Сохраняю на сервер...');
   var ok = await vkcSaveToServer();
+  vkcRenderClients(); // перерисовываем — bid мог обновиться после ответа сервера
   vkcStatus(ok ? 'Клиент создан и сохранён ✓' : 'Клиент создан (ошибка сервера)', ok ? 3000 : 0);
 }
 
@@ -3311,7 +3312,7 @@ async function vkcSaveToServer() {
       body: JSON.stringify(payload)
     });
     var data = await res.json();
-    if (data.bin_id) { vkcState.bid = data.bin_id; localStorage.setItem('jsonbin_bid', data.bin_id); }
+    if (data.bin_id) { vkcState.bid = data.bin_id; localStorage.setItem('jsonbin_bid', data.bin_id); vkcRenderClients(); }
     if (data.created) {
       payload.bid = data.bin_id;
       var res2 = await fetch(VKC_API + '/api/clients', {
@@ -3346,9 +3347,9 @@ function vkcRenderClients() {
     grid.innerHTML = '<div class="empty">Клиентов пока нет — создай первого выше</div>';
     return;
   }
-  var bid = vkcState.bid;
+  var bid = localStorage.getItem('jsonbin_bid') || vkcState.bid;
   grid.innerHTML = vkcState.clients.map(function(cl) {
-    var url = 'https://pikalov-media-dashboard.vercel.app/?client=' + cl.token + (bid ? '&bid=' + bid : '');
+    var url = 'https://pikalov-media-dashboard.vercel.app/?client=' + cl.token + (bid ? '&bid=' + encodeURIComponent(bid) : '');
     var cnt = cl.campaigns.length;
     var suf = cnt===1?'я':cnt<5?'и':'й';
     var campNames = cl.campaigns.map(function(cid){
