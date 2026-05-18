@@ -517,6 +517,35 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .vkc-camp-tag{font-size:10px;color:var(--text2);background:var(--bg4);padding:2px 7px;border-radius:4px;border:.5px solid var(--border)}
 .vkc-del-btn{font-size:11px;color:var(--red);background:transparent;border:.5px solid rgba(245,86,86,.2);border-radius:6px;padding:4px 10px;cursor:pointer;margin-top:8px;transition:all .15s}
 .vkc-del-btn:hover{background:rgba(245,86,86,.07)}
+
+/* ── Mind Map ─────────────────────────────────────────────────────────── */
+.mm-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.mm-list-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.06em}
+.mm-item{background:var(--bg2);border:.5px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:12px;transition:border-color .2s}
+.mm-item:hover{border-color:var(--border2)}
+.mm-item-name{font-size:14px;font-weight:500;margin-bottom:3px}
+.mm-item-date{font-size:11px;color:var(--text3)}
+.mm-item-btns{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap}
+.mm-btn{font-size:11px;padding:5px 12px;border-radius:7px;border:.5px solid;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;background:transparent}
+.mm-btn-open{color:var(--accent2);border-color:rgba(127,110,245,.3);background:rgba(127,110,245,.07)}.mm-btn-open:hover{background:rgba(127,110,245,.18)}
+.mm-btn-share{color:var(--text2);border-color:var(--border2)}.mm-btn-share:hover{color:var(--text);border-color:var(--border)}
+.mm-btn-del{color:var(--red);border-color:rgba(245,86,86,.2)}.mm-btn-del:hover{background:rgba(245,86,86,.07)}
+/* Editor overlay */
+.mm-editor{position:fixed;inset:0;background:#0d0d10;z-index:400;display:none;flex-direction:column}
+.mm-editor.open{display:flex}
+.mm-editor-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#0a0a0c;border-bottom:.5px solid var(--border);flex-shrink:0;gap:12px}
+.mm-editor-name{font-size:15px;font-weight:500;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mm-editor-back{font-size:12px;color:var(--text2);background:var(--bg3);border:.5px solid var(--border2);border-radius:7px;padding:6px 12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.mm-editor-back:hover{color:var(--text)}
+.mm-editor-share{font-size:12px;color:var(--accent2);background:rgba(127,110,245,.1);border:.5px solid rgba(127,110,245,.3);border-radius:7px;padding:6px 12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.mm-editor-share:hover{background:rgba(127,110,245,.2)}
+.mm-area{flex:1;position:relative;overflow:hidden;cursor:default;user-select:none}
+.mm-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.mm-node{position:absolute;background:#1a1a24;border:1.5px solid var(--border2);border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;transform:translate(-50%,-50%);user-select:none;transition:box-shadow .12s;max-width:180px;text-align:center;word-break:break-word;line-height:1.4}
+.mm-node:hover{box-shadow:0 0 0 2px rgba(127,110,245,.35)}
+.mm-node.mm-selected{box-shadow:0 0 0 2.5px #7f6ef5;z-index:10}
+.mm-node-inp{position:absolute;transform:translate(-50%,-50%);background:#1f1f2c;border:1.5px solid #7f6ef5;border-radius:8px;padding:7px 12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;z-index:20;min-width:100px;text-align:center}
+.mm-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,.18);pointer-events:none;white-space:nowrap;letter-spacing:.04em}
 </style>
 </head>
 <body>
@@ -535,6 +564,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 
     <button class="ntab" onclick="showTab('pomodoro')">🍅 Помидоро</button>
     <button class="ntab" onclick="showTab('storage')">📦 Склад</button>
+    <button class="ntab" onclick="showTab('mindmap')">🧠 Минд мап</button>
     <button class="ntab" onclick="showTab('vkclient')">📊 Клиенты VK</button>
   </div>
 </div>
@@ -656,6 +686,29 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
       </div>
     </div>
   </div>
+
+  <div id="view-mindmap" style="display:none">
+    <div style="max-width:1020px;margin:0 auto;padding:24px">
+      <div class="mm-toolbar">
+        <div class="mm-list-title">🧠 Минд мап</div>
+        <button class="add-btn" onclick="mmNew()">+ Новый минд мап</button>
+      </div>
+      <div id="mm-list"></div>
+    </div>
+  </div>
+
+<!-- Mind Map Editor (fullscreen overlay) -->
+<div id="mm-editor" class="mm-editor">
+  <div class="mm-editor-bar">
+    <button class="mm-editor-back" onclick="mmBack()">← Назад</button>
+    <span class="mm-editor-name" id="mm-editor-name"></span>
+    <button class="mm-editor-share" onclick="mmShare()">Поделиться</button>
+  </div>
+  <div class="mm-area" id="mm-area">
+    <svg class="mm-svg" id="mm-svg"></svg>
+    <div class="mm-hint">Клик — выбрать · Tab — дочерний · Enter — соседний · Delete — удалить · Двойной клик — редактировать</div>
+  </div>
+</div>
 
 <!-- Modal: Project -->
 <div class="overlay" id="modal-project">
@@ -933,11 +986,11 @@ function fmtD(s) { return new Date(s).toLocaleDateString('ru',{day:'2-digit',mon
 // ── TABS ──────────────────────────────────────────────────────────────
 function showTab(t) {
   currentTab = t;
-  ['mediaplans','analytics','budgets','team','calendar','pomodoro','storage','vkclient'].forEach(function(k){
+  ['mediaplans','analytics','budgets','team','calendar','pomodoro','storage','mindmap','vkclient'].forEach(function(k){
     document.getElementById('view-'+k).style.display = k===t?'':'none';
   });
   document.querySelectorAll('.ntab:not(.soon)').forEach(function(b,i){
-    b.classList.toggle('active', i===['mediaplans','analytics','budgets','team','calendar','pomodoro','storage','vkclient'].indexOf(t));
+    b.classList.toggle('active', i===['mediaplans','analytics','budgets','team','calendar','pomodoro','storage','mindmap','vkclient'].indexOf(t));
   });
   if (t === 'analytics') renderAnalytics();
   if (t === 'budgets')   bgtRender();
@@ -945,6 +998,7 @@ function showTab(t) {
   if (t === 'calendar')  renderCalendar();
   if (t === 'pomodoro')  pomoRenderUI();
   if (t === 'storage')   stgRender();
+  if (t === 'mindmap')   mmRenderList();
   if (t === 'vkclient')  vkcRender();
   if (t !== 'pomodoro')  document.title = 'PIKALOV MEDIA Workspace';
 }
@@ -3154,6 +3208,283 @@ function vkcCheckLink() {
   window.open(url, '_blank');
 }
 function vkcRender() {}
+</script>
+
+<script>
+// ── MIND MAP ────────────────────────────────────────────────────────────
+(function(){
+  var COLORS=['#7f6ef5','#4A9EFF','#FF8C42','#50C878'];
+  var mm={state:{maps:[]},cur:null,sel:null,pan:{x:0,y:0},drag:null,panDrag:null,editing:false};
+
+  function uid(){return Math.random().toString(36).slice(2,9);}
+  function mmLoad(){try{mm.state=JSON.parse(localStorage.getItem('pm_mindmap_v1'))||{maps:[]};}catch(e){mm.state={maps:[]};}}
+  function mmSave(){if(mm.cur){var m=mm.state.maps.find(function(x){return x.id===mm.cur.id;});if(m)m.nodes=mm.cur.nodes;}localStorage.setItem('pm_mindmap_v1',JSON.stringify(mm.state));}
+  function esc2(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  function getDepth(nodeId){
+    var d=0,nodes=mm.cur.nodes,n=nodes.find(function(x){return x.id===nodeId;});
+    while(n&&n.parentId){d++;var pid=n.parentId;n=nodes.find(function(x){return x.id===pid;});}
+    return d;
+  }
+  function sx(nx){var a=document.getElementById('mm-area');return nx+(a?a.clientWidth/2:0)+mm.pan.x;}
+  function sy(ny){var a=document.getElementById('mm-area');return ny+(a?a.clientHeight/2:0)+mm.pan.y;}
+
+  // ── LIST ──
+  window.mmRenderList=function(){
+    mmLoad();
+    var el=document.getElementById('mm-list');
+    if(!el)return;
+    if(!mm.state.maps.length){el.innerHTML='<div class="empty" style="padding:60px 20px">Нет минд мап — создай первый!</div>';return;}
+    el.innerHTML=mm.state.maps.map(function(m){
+      return '<div class="mm-item">'+
+        '<div class="mm-item-info"><div class="mm-item-name">'+esc2(m.name)+'</div>'+
+        '<div class="mm-item-date">'+new Date(m.created).toLocaleDateString('ru')+'</div></div>'+
+        '<div class="mm-item-btns">'+
+        '<button class="mm-btn mm-btn-open" onclick="mmOpen(\''+m.id+'\')">Открыть</button>'+
+        '<button class="mm-btn mm-btn-share" onclick="mmShareFromList(\''+m.id+'\')">Поделиться</button>'+
+        '<button class="mm-btn mm-btn-del" onclick="mmDeleteMap(\''+m.id+'\')">Удалить</button>'+
+        '</div></div>';
+    }).join('');
+  };
+
+  window.mmNew=function(){
+    var name=prompt('Название минд мапа:');
+    if(!name||!name.trim())return;
+    name=name.trim();
+    mmLoad();
+    var mapId=uid(),nodeId=uid();
+    mm.state.maps.unshift({id:mapId,name:name,created:new Date().toISOString(),
+      nodes:[{id:nodeId,text:name,x:0,y:0,parentId:null}]});
+    mmSave();mmRenderList();
+  };
+
+  window.mmDeleteMap=function(id){
+    if(!confirm('Удалить минд мап?'))return;
+    mmLoad();mm.state.maps=mm.state.maps.filter(function(m){return m.id!==id;});
+    mm.cur=null;localStorage.setItem('pm_mindmap_v1',JSON.stringify(mm.state));
+    mmRenderList();
+  };
+
+  // ── EDITOR ──
+  window.mmOpen=function(id){
+    mmLoad();
+    var map=mm.state.maps.find(function(m){return m.id===id;});
+    if(!map)return;
+    mm.cur=JSON.parse(JSON.stringify(map)); // work on a copy
+    mm.sel=null;mm.pan={x:0,y:0};mm.editing=false;
+    document.getElementById('mm-editor-name').textContent=mm.cur.name;
+    document.getElementById('mm-editor').classList.add('open');
+    document.body.style.overflow='hidden';
+    setTimeout(mmRedraw,40);
+  };
+
+  window.mmBack=function(){
+    mmSave();
+    document.getElementById('mm-editor').classList.remove('open');
+    document.body.style.overflow='';
+    mm.cur=null;mm.sel=null;
+    mmRenderList();
+  };
+
+  window.mmRedraw=function(){
+    var area=document.getElementById('mm-area');
+    var svg=document.getElementById('mm-svg');
+    if(!area||!svg||!mm.cur)return;
+    Array.from(area.querySelectorAll('.mm-node,.mm-node-inp')).forEach(function(n){n.remove();});
+    svg.innerHTML='';
+    var nodes=mm.cur.nodes;
+    nodes.forEach(function(n){if(n.parentId)mmDrawLine(n.id);});
+    nodes.forEach(function(n){mmMakeNodeEl(n);});
+  };
+
+  function mmDrawLine(childId){
+    var nodes=mm.cur.nodes;
+    var n=nodes.find(function(x){return x.id===childId;});
+    if(!n||!n.parentId)return;
+    var p=nodes.find(function(x){return x.id===n.parentId;});
+    if(!p)return;
+    var svg=document.getElementById('mm-svg');
+    var old=document.getElementById('mm-line-'+childId);
+    if(old)old.remove();
+    var x1=sx(p.x),y1=sy(p.y),x2=sx(n.x),y2=sy(n.y),cx=(x1+x2)/2;
+    var d=getDepth(childId);
+    var color=COLORS[Math.min(d-1,COLORS.length-1)];
+    var path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.id='mm-line-'+childId;
+    path.setAttribute('d','M'+x1+','+y1+' C'+cx+','+y1+' '+cx+','+y2+' '+x2+','+y2);
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke',color);
+    path.setAttribute('stroke-width','2');
+    path.setAttribute('opacity','0.65');
+    svg.appendChild(path);
+  }
+
+  function mmMakeNodeEl(n){
+    var area=document.getElementById('mm-area');
+    var d=getDepth(n.id);
+    var color=COLORS[Math.min(Math.max(d-1,0),COLORS.length-1)];
+    var el=document.createElement('div');
+    el.className='mm-node'+(n.id===mm.sel?' mm-selected':'');
+    el.id='mm-node-'+n.id;
+    el.dataset.nid=n.id;
+    el.textContent=n.text;
+    el.style.left=sx(n.x)+'px';
+    el.style.top=sy(n.y)+'px';
+    if(d===0){el.style.background='#7f6ef5';el.style.color='#fff';el.style.borderColor='#7f6ef5';el.style.fontWeight='600';}
+    else{el.style.borderColor=color;el.style.color=color;}
+    el.addEventListener('mousedown',function(e){
+      if(mm.editing)return;
+      e.stopPropagation();
+      mmSelectNode(n.id);
+      mm.drag={nid:n.id,sx:e.clientX,sy:e.clientY,ox:n.x,oy:n.y};
+    });
+    el.addEventListener('dblclick',function(e){
+      e.stopPropagation();
+      mmEditNode(n.id,el);
+    });
+    area.appendChild(el);
+  }
+
+  function mmSelectNode(id){
+    var prev=document.querySelector('.mm-node.mm-selected');
+    if(prev)prev.classList.remove('mm-selected');
+    mm.sel=id;
+    if(id){var el=document.getElementById('mm-node-'+id);if(el)el.classList.add('mm-selected');}
+  }
+
+  function mmEditNode(nodeId,el){
+    mm.editing=true;
+    var n=mm.cur.nodes.find(function(x){return x.id===nodeId;});
+    if(!n)return;
+    var inp=document.createElement('input');
+    inp.className='mm-node-inp';
+    inp.value=n.text;
+    inp.style.left=el.style.left;
+    inp.style.top=el.style.top;
+    el.style.visibility='hidden';
+    document.getElementById('mm-area').appendChild(inp);
+    inp.focus();inp.select();
+    var done=function(){
+      var v=inp.value.trim()||n.text;
+      n.text=v;el.textContent=v;el.style.visibility='';
+      inp.remove();mm.editing=false;mmSave();
+    };
+    inp.addEventListener('blur',done);
+    inp.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();done();}
+    });
+  }
+
+  function mmUpdateNodePos(nodeId){
+    var n=mm.cur.nodes.find(function(x){return x.id===nodeId;});
+    if(!n)return;
+    var el=document.getElementById('mm-node-'+nodeId);
+    if(el){el.style.left=sx(n.x)+'px';el.style.top=sy(n.y)+'px';}
+    mmDrawLine(nodeId);
+    mm.cur.nodes.filter(function(c){return c.parentId===nodeId;}).forEach(function(c){mmDrawLine(c.id);});
+  }
+
+  // Keyboard
+  document.addEventListener('keydown',function(e){
+    if(!mm.cur||mm.editing)return;
+    if(e.key==='Tab'){
+      e.preventDefault();
+      if(mm.sel)mmAddChild(mm.sel);
+    } else if(e.key==='Enter'){
+      if(!mm.sel)return;
+      e.preventDefault();
+      var n=mm.cur.nodes.find(function(x){return x.id===mm.sel;});
+      if(n&&n.parentId)mmAddSibling(mm.sel);else if(n)mmAddChild(mm.sel);
+    } else if((e.key==='Delete'||e.key==='Backspace')&&mm.sel){
+      var n2=mm.cur.nodes.find(function(x){return x.id===mm.sel;});
+      if(n2&&n2.parentId){e.preventDefault();mmDelNode(mm.sel);}
+    }
+  });
+
+  window.mmAddChild=function(parentId){
+    var parent=mm.cur.nodes.find(function(x){return x.id===parentId;});
+    if(!parent)return;
+    var children=mm.cur.nodes.filter(function(x){return x.parentId===parentId;});
+    var newId=uid();
+    var nx=parent.x+220;
+    var ny=children.length===0?parent.y:children[children.length-1].y+70;
+    mm.cur.nodes.push({id:newId,text:'Новый узел',x:nx,y:ny,parentId:parentId});
+    mmSave();mmRedraw();mmSelectNode(newId);
+    var el=document.getElementById('mm-node-'+newId);
+    if(el)setTimeout(function(){mmEditNode(newId,el);},30);
+  };
+
+  window.mmAddSibling=function(nodeId){
+    var n=mm.cur.nodes.find(function(x){return x.id===nodeId;});
+    if(!n||!n.parentId)return;
+    var newId=uid();
+    mm.cur.nodes.push({id:newId,text:'Новый узел',x:n.x,y:n.y+70,parentId:n.parentId});
+    mmSave();mmRedraw();mmSelectNode(newId);
+    var el=document.getElementById('mm-node-'+newId);
+    if(el)setTimeout(function(){mmEditNode(newId,el);},30);
+  };
+
+  window.mmDelNode=function(nodeId){
+    function collectIds(id){
+      var r=[id];
+      mm.cur.nodes.filter(function(c){return c.parentId===id;}).forEach(function(c){r=r.concat(collectIds(c.id));});
+      return r;
+    }
+    var del=collectIds(nodeId);
+    mm.cur.nodes=mm.cur.nodes.filter(function(n){return del.indexOf(n.id)===-1;});
+    mm.sel=null;mmSave();mmRedraw();
+  };
+
+  // Mouse drag
+  document.addEventListener('mousemove',function(e){
+    if(mm.drag&&mm.cur){
+      var n=mm.cur.nodes.find(function(x){return x.id===mm.drag.nid;});
+      if(n){n.x=mm.drag.ox+(e.clientX-mm.drag.sx);n.y=mm.drag.oy+(e.clientY-mm.drag.sy);mmUpdateNodePos(n.id);}
+    } else if(mm.panDrag){
+      mm.pan.x=mm.panDrag.ox+(e.clientX-mm.panDrag.sx);
+      mm.pan.y=mm.panDrag.oy+(e.clientY-mm.panDrag.sy);
+      mmRedraw();
+    }
+  });
+  document.addEventListener('mouseup',function(){
+    if(mm.drag){mmSave();mm.drag=null;}
+    mm.panDrag=null;
+  });
+
+  // Pan on background click
+  var area=document.getElementById('mm-area');
+  if(area){
+    area.addEventListener('mousedown',function(e){
+      if(!e.target.classList.contains('mm-node')&&!e.target.classList.contains('mm-node-inp')){
+        mmSelectNode(null);
+        mm.panDrag={sx:e.clientX,sy:e.clientY,ox:mm.pan.x,oy:mm.pan.y};
+      }
+    });
+  }
+
+  // Share
+  window.mmShare=function(){if(mm.cur)mmDoShare(mm.cur);};
+  window.mmShareFromList=function(id){
+    mmLoad();
+    var m=mm.state.maps.find(function(x){return x.id===id;});
+    if(m)mmDoShare(m);
+  };
+  function mmDoShare(map){
+    var bid=uid()+uid();
+    var key='mindmap_'+map.id;
+    fetch('/api/save',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({key:key,bid:bid,data:map})
+    }).then(function(r){
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      var url=window.location.origin+'/mindmap.html?id='+map.id+'&bid='+bid;
+      prompt('Ссылка для клиента (скопируй):',url);
+    }).catch(function(err){
+      alert('Ошибка при сохранении на сервер: '+err.message);
+    });
+  }
+})();
 </script>
 </body>
 </html>
