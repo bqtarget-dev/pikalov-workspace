@@ -705,7 +705,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <button class="mm-editor-share" onclick="mmShare()">Поделиться</button>
   </div>
   <div class="mm-area" id="mm-area">
-    <div id="mm-canvas" style="position:absolute;inset:0;will-change:transform">
+    <div id="mm-canvas" style="position:absolute;inset:0">
       <svg class="mm-svg" id="mm-svg"></svg>
     </div>
     <div class="mm-hint">Клик — выбрать · Tab — дочерний · Enter — соседний · Delete — удалить · Двойной клик — редактировать</div>
@@ -3214,33 +3214,37 @@ function vkcRender() {}
 
 <script>
 // ── MIND MAP ────────────────────────────────────────────────────────────
+// Lazy init: no DOM queries, no global listeners until mmOpen() is called.
 (function(){
   var COLORS=['#7f6ef5','#4A9EFF','#FF8C42','#50C878'];
-  var mm={state:{maps:[]},cur:null,sel:null,pan:{x:0,y:0},drag:null,panDrag:null,editing:false,rafId:null,pendingMouse:null};
+  var mm={
+    state:{maps:[]},cur:null,sel:null,
+    pan:{x:0,y:0},drag:null,panDrag:null,
+    editing:false,rafId:null,pendingMouse:null,
+    listening:false
+  };
 
   function uid(){return Math.random().toString(36).slice(2,9);}
   function mmLoad(){try{mm.state=JSON.parse(localStorage.getItem('pm_mindmap_v1'))||{maps:[]};}catch(e){mm.state={maps:[]};}}
-  function mmSave(){if(mm.cur){var m=mm.state.maps.find(function(x){return x.id===mm.cur.id;});if(m)m.nodes=mm.cur.nodes;}localStorage.setItem('pm_mindmap_v1',JSON.stringify(mm.state));}
+  function mmSave(){
+    if(mm.cur){var m=mm.state.maps.find(function(x){return x.id===mm.cur.id;});if(m)m.nodes=mm.cur.nodes;}
+    try{localStorage.setItem('pm_mindmap_v1',JSON.stringify(mm.state));}catch(e){}
+  }
   function esc2(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-  // BFS depth map — no infinite loops, O(n)
+  // BFS depth — O(n), no infinite loops
   function buildDepths(nodes){
-    var depths={};
-    var root=nodes.find(function(n){return !n.parentId;});
+    var depths={},root=nodes.find(function(n){return !n.parentId;});
     if(!root)return depths;
-    var queue=[{id:root.id,d:0}];
-    var visited={};
-    while(queue.length){
-      var item=queue.shift();
-      if(visited[item.id])continue;
-      visited[item.id]=true;
-      depths[item.id]=item.d;
-      nodes.filter(function(n){return n.parentId===item.id;}).forEach(function(n){queue.push({id:n.id,d:item.d+1});});
+    var q=[{id:root.id,d:0}],vis={};
+    while(q.length){
+      var it=q.shift();if(vis[it.id])continue;vis[it.id]=true;depths[it.id]=it.d;
+      nodes.filter(function(n){return n.parentId===it.id;}).forEach(function(n){q.push({id:n.id,d:it.d+1});});
     }
     return depths;
   }
 
-  // Canvas coords: centered in area, NO pan (pan applied via CSS transform on #mm-canvas)
+  // Coords centered in area; pan handled by CSS transform on #mm-canvas
   function sx(nx){var a=document.getElementById('mm-area');return nx+(a?a.clientWidth/2:500);}
   function sy(ny){var a=document.getElementById('mm-area');return ny+(a?a.clientHeight/2:400);}
   function getCanvas(){return document.getElementById('mm-canvas');}
@@ -3250,17 +3254,17 @@ function vkcRender() {}
   // ── LIST ──
   window.mmRenderList=function(){
     mmLoad();
-    var el=document.getElementById('mm-list');
-    if(!el)return;
+    var el=document.getElementById('mm-list');if(!el)return;
     if(!mm.state.maps.length){el.innerHTML='<div class="empty" style="padding:60px 20px">Нет минд мап — создай первый!</div>';return;}
     el.innerHTML=mm.state.maps.map(function(m){
+      var id=esc2(m.id);
       return '<div class="mm-item">'+
         '<div class="mm-item-info"><div class="mm-item-name">'+esc2(m.name)+'</div>'+
         '<div class="mm-item-date">'+new Date(m.created).toLocaleDateString('ru')+'</div></div>'+
         '<div class="mm-item-btns">'+
-        '<button class="mm-btn mm-btn-open" onclick="mmOpen(\''+m.id+'\')">Открыть</button>'+
-        '<button class="mm-btn mm-btn-share" onclick="mmShareFromList(\''+m.id+'\')">Поделиться</button>'+
-        '<button class="mm-btn mm-btn-del" onclick="mmDeleteMap(\''+m.id+'\')">Удалить</button>'+
+          '<button class="mm-btn mm-btn-open" onclick="mmOpen(\''+id+'\')">Открыть</button>'+
+          '<button class="mm-btn mm-btn-share" onclick="mmShareFromList(\''+id+'\')">Поделиться</button>'+
+          '<button class="mm-btn mm-btn-del" onclick="mmDeleteMap(\''+id+'\')">Удалить</button>'+
         '</div></div>';
     }).join('');
   };
@@ -3279,50 +3283,47 @@ function vkcRender() {}
   window.mmDeleteMap=function(id){
     if(!confirm('Удалить минд мап?'))return;
     mmLoad();mm.state.maps=mm.state.maps.filter(function(m){return m.id!==id;});
-    mm.cur=null;localStorage.setItem('pm_mindmap_v1',JSON.stringify(mm.state));
+    mm.cur=null;try{localStorage.setItem('pm_mindmap_v1',JSON.stringify(mm.state));}catch(e){}
     mmRenderList();
   };
 
   // ── EDITOR ──
   window.mmOpen=function(id){
     mmLoad();
-    var map=mm.state.maps.find(function(m){return m.id===id;});
-    if(!map)return;
+    var map=mm.state.maps.find(function(m){return m.id===id;});if(!map)return;
     mm.cur=JSON.parse(JSON.stringify(map));
     mm.sel=null;mm.pan={x:0,y:0};mm.editing=false;mm.drag=null;mm.panDrag=null;
-    document.getElementById('mm-editor-name').textContent=mm.cur.name;
-    document.getElementById('mm-editor').classList.add('open');
+    var nameEl=document.getElementById('mm-editor-name');if(nameEl)nameEl.textContent=mm.cur.name;
+    var editor=document.getElementById('mm-editor');if(editor)editor.classList.add('open');
     document.body.style.overflow='hidden';
-    // Two RAFs: first lets browser paint the overlay, second has correct dimensions
+    var c=getCanvas();if(c)c.style.willChange='transform'; // GPU layer only when needed
+    mmEnsureListeners(); // attach global listeners lazily, once
     requestAnimationFrame(function(){requestAnimationFrame(mmRedraw);});
   };
 
   window.mmBack=function(){
     mmSave();
-    document.getElementById('mm-editor').classList.remove('open');
+    var editor=document.getElementById('mm-editor');if(editor)editor.classList.remove('open');
     document.body.style.overflow='';
+    var c=getCanvas();if(c)c.style.willChange='';
     mm.cur=null;mm.sel=null;mm.drag=null;mm.panDrag=null;
     if(mm.rafId){cancelAnimationFrame(mm.rafId);mm.rafId=null;}
     mmRenderList();
   };
 
   window.mmRedraw=function(){
-    var canvas=getCanvas(),svg=getSvg();
-    if(!canvas||!svg||!mm.cur)return;
+    var canvas=getCanvas(),svg=getSvg();if(!canvas||!svg||!mm.cur)return;
     Array.from(canvas.querySelectorAll('.mm-node,.mm-node-inp')).forEach(function(n){n.remove();});
     svg.innerHTML='';
-    var nodes=mm.cur.nodes;
-    var depths=buildDepths(nodes);
-    nodes.forEach(function(n){if(n.parentId)mmDrawOneLine(n,nodes,depths);});
+    var nodes=mm.cur.nodes,depths=buildDepths(nodes);
+    nodes.forEach(function(n){if(n.parentId)mmDrawLine(n,nodes,depths);});
     nodes.forEach(function(n){mmMakeNodeEl(n,depths[n.id]||0);});
     mmSetPan();
   };
 
-  function mmDrawOneLine(n,nodes,depths){
-    var p=nodes.find(function(x){return x.id===n.parentId;});
-    if(!p)return;
-    var d=depths[n.id]||1;
-    var color=COLORS[Math.min(d-1,COLORS.length-1)];
+  function mmDrawLine(n,nodes,depths){
+    var p=nodes.find(function(x){return x.id===n.parentId;});if(!p)return;
+    var d=depths[n.id]||1,color=COLORS[Math.min(d-1,COLORS.length-1)];
     var x1=sx(p.x),y1=sy(p.y),x2=sx(n.x),y2=sy(n.y),mx=(x1+x2)/2;
     var path=document.createElementNS('http://www.w3.org/2000/svg','path');
     path.id='mm-line-'+n.id;
@@ -3336,7 +3337,7 @@ function vkcRender() {}
     var color=COLORS[Math.min(Math.max(d-1,0),COLORS.length-1)];
     var el=document.createElement('div');
     el.className='mm-node'+(n.id===mm.sel?' mm-selected':'');
-    el.id='mm-node-'+n.id;el.dataset.nid=n.id;el.textContent=n.text;
+    el.id='mm-node-'+n.id;el.textContent=n.text;
     el.style.left=sx(n.x)+'px';el.style.top=sy(n.y)+'px';
     if(d===0){el.style.background='#7f6ef5';el.style.color='#fff';el.style.borderColor='#7f6ef5';el.style.fontWeight='600';}
     else{el.style.borderColor=color;el.style.color=color;}
@@ -3351,158 +3352,129 @@ function vkcRender() {}
   }
 
   function mmSelectNode(id){
-    var prev=document.querySelector('.mm-node.mm-selected');
+    var prev=document.querySelector('#mm-canvas .mm-node.mm-selected');
     if(prev)prev.classList.remove('mm-selected');
     mm.sel=id;
     if(id){var el=document.getElementById('mm-node-'+id);if(el)el.classList.add('mm-selected');}
   }
 
   function mmEditNode(nodeId,el){
+    if(mm.editing)return;
     mm.editing=true;
     var n=mm.cur.nodes.find(function(x){return x.id===nodeId;});
-    if(!n)return;
+    if(!n){mm.editing=false;return;}
     var inp=document.createElement('input');
     inp.className='mm-node-inp';
     inp.value=n.text;inp.style.left=el.style.left;inp.style.top=el.style.top;
     el.style.visibility='hidden';
     getCanvas().appendChild(inp);
     inp.focus();inp.select();
-    var done=function(){
+    var done=false;
+    var commit=function(){
+      if(done)return;done=true;
       var v=inp.value.trim()||n.text;
       n.text=v;el.textContent=v;el.style.visibility='';
       inp.remove();mm.editing=false;mmSave();
     };
-    inp.addEventListener('blur',done);
-    inp.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();done();}});
+    inp.addEventListener('blur',commit);
+    inp.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();commit();}});
   }
 
-  // Lightweight update during drag: move element + redraw only connected lines
   function mmUpdateNodePos(nodeId){
     if(!mm.cur)return;
-    var nodes=mm.cur.nodes;
-    var n=nodes.find(function(x){return x.id===nodeId;});
-    if(!n)return;
+    var nodes=mm.cur.nodes,n=nodes.find(function(x){return x.id===nodeId;});if(!n)return;
     var el=document.getElementById('mm-node-'+nodeId);
     if(el){el.style.left=sx(n.x)+'px';el.style.top=sy(n.y)+'px';}
-    function updateLine(childId,parentNode,childNode){
-      var lineEl=document.getElementById('mm-line-'+childId);
-      if(!lineEl)return;
-      var x1=sx(parentNode.x),y1=sy(parentNode.y),x2=sx(childNode.x),y2=sy(childNode.y),mx=(x1+x2)/2;
-      lineEl.setAttribute('d','M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2);
+    function upLine(cid,pn,cn){
+      var ln=document.getElementById('mm-line-'+cid);if(!ln)return;
+      var x1=sx(pn.x),y1=sy(pn.y),x2=sx(cn.x),y2=sy(cn.y),mx=(x1+x2)/2;
+      ln.setAttribute('d','M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2);
     }
-    // Line from parent → this node
-    if(n.parentId){var p=nodes.find(function(x){return x.id===n.parentId;});if(p)updateLine(nodeId,p,n);}
-    // Lines from this node → children
-    nodes.filter(function(c){return c.parentId===nodeId;}).forEach(function(c){updateLine(c.id,n,c);});
+    if(n.parentId){var p=nodes.find(function(x){return x.id===n.parentId;});if(p)upLine(nodeId,p,n);}
+    nodes.filter(function(c){return c.parentId===nodeId;}).forEach(function(c){upLine(c.id,n,c);});
   }
 
-  // Keyboard
-  document.addEventListener('keydown',function(e){
+  // ── NAMED HANDLERS (needed for lazy add and future removeEventListener) ──
+  function mmKeydown(e){
     if(!mm.cur||mm.editing)return;
     if(e.key==='Tab'){
-      e.preventDefault();
-      if(mm.sel)mmAddChild(mm.sel);
+      e.preventDefault();if(mm.sel)mmAddChild(mm.sel);
     } else if(e.key==='Enter'){
-      if(!mm.sel)return;
-      e.preventDefault();
+      if(!mm.sel)return;e.preventDefault();
       var n=mm.cur.nodes.find(function(x){return x.id===mm.sel;});
       if(n&&n.parentId)mmAddSibling(mm.sel);else if(n)mmAddChild(mm.sel);
     } else if((e.key==='Delete'||e.key==='Backspace')&&mm.sel){
       var n2=mm.cur.nodes.find(function(x){return x.id===mm.sel;});
       if(n2&&n2.parentId){e.preventDefault();mmDelNode(mm.sel);}
     }
-  });
-
-  window.mmAddChild=function(parentId){
-    var parent=mm.cur.nodes.find(function(x){return x.id===parentId;});
-    if(!parent)return;
-    var children=mm.cur.nodes.filter(function(x){return x.parentId===parentId;});
-    var newId=uid();
-    var nx=parent.x+220;
-    var ny=children.length===0?parent.y:children[children.length-1].y+70;
-    mm.cur.nodes.push({id:newId,text:'Новый узел',x:nx,y:ny,parentId:parentId});
-    mmSave();mmRedraw();mmSelectNode(newId);
-    var el=document.getElementById('mm-node-'+newId);
-    if(el)setTimeout(function(){mmEditNode(newId,el);},30);
-  };
-
-  window.mmAddSibling=function(nodeId){
-    var n=mm.cur.nodes.find(function(x){return x.id===nodeId;});
-    if(!n||!n.parentId)return;
-    var newId=uid();
-    mm.cur.nodes.push({id:newId,text:'Новый узел',x:n.x,y:n.y+70,parentId:n.parentId});
-    mmSave();mmRedraw();mmSelectNode(newId);
-    var el=document.getElementById('mm-node-'+newId);
-    if(el)setTimeout(function(){mmEditNode(newId,el);},30);
-  };
-
-  window.mmDelNode=function(nodeId){
-    function collectIds(id){
-      var r=[id];
-      mm.cur.nodes.filter(function(c){return c.parentId===id;}).forEach(function(c){r=r.concat(collectIds(c.id));});
-      return r;
-    }
-    var del=collectIds(nodeId);
-    mm.cur.nodes=mm.cur.nodes.filter(function(n){return del.indexOf(n.id)===-1;});
-    mm.sel=null;mmSave();mmRedraw();
-  };
-
-  // Mouse drag — RAF-throttled, pan is a CSS transform (no DOM rebuild)
-  document.addEventListener('mousemove',function(e){
+  }
+  function mmMousemove(e){
     if(!mm.drag&&!mm.panDrag)return;
     mm.pendingMouse={x:e.clientX,y:e.clientY};
     if(mm.rafId)return;
     mm.rafId=requestAnimationFrame(function(){
-      mm.rafId=null;
-      var ev=mm.pendingMouse;mm.pendingMouse=null;
-      if(!ev)return;
+      mm.rafId=null;var ev=mm.pendingMouse;mm.pendingMouse=null;if(!ev)return;
       if(mm.drag&&mm.cur){
         var n=mm.cur.nodes.find(function(x){return x.id===mm.drag.nid;});
         if(n){n.x=mm.drag.ox+(ev.x-mm.drag.sx);n.y=mm.drag.oy+(ev.y-mm.drag.sy);mmUpdateNodePos(n.id);}
       } else if(mm.panDrag){
         mm.pan.x=mm.panDrag.ox+(ev.x-mm.panDrag.sx);
         mm.pan.y=mm.panDrag.oy+(ev.y-mm.panDrag.sy);
-        mmSetPan(); // just one style.transform — no DOM rebuild
-      }
-    });
-  });
-  document.addEventListener('mouseup',function(){
-    if(mm.drag){mmSave();mm.drag=null;}
-    mm.panDrag=null;
-  });
-
-  // Pan on background click
-  var area=document.getElementById('mm-area');
-  if(area){
-    area.addEventListener('mousedown',function(e){
-      if(!e.target.classList.contains('mm-node')&&!e.target.classList.contains('mm-node-inp')){
-        mmSelectNode(null);
-        mm.panDrag={sx:e.clientX,sy:e.clientY,ox:mm.pan.x,oy:mm.pan.y};
+        mmSetPan();
       }
     });
   }
+  function mmMouseup(){if(mm.drag){mmSave();mm.drag=null;}mm.panDrag=null;}
+  function mmAreaDown(e){
+    if(!e.target.classList.contains('mm-node')&&!e.target.classList.contains('mm-node-inp')){
+      mmSelectNode(null);mm.panDrag={sx:e.clientX,sy:e.clientY,ox:mm.pan.x,oy:mm.pan.y};
+    }
+  }
 
-  // Share
-  window.mmShare=function(){if(mm.cur)mmDoShare(mm.cur);};
-  window.mmShareFromList=function(id){
-    mmLoad();
-    var m=mm.state.maps.find(function(x){return x.id===id;});
-    if(m)mmDoShare(m);
+  // Attach all global listeners once, lazily, when editor first opens
+  function mmEnsureListeners(){
+    if(mm.listening)return;mm.listening=true;
+    document.addEventListener('keydown',mmKeydown);
+    document.addEventListener('mousemove',mmMousemove,{passive:true});
+    document.addEventListener('mouseup',mmMouseup,{passive:true});
+    var area=document.getElementById('mm-area');
+    if(area)area.addEventListener('mousedown',mmAreaDown,{passive:true});
+  }
+
+  window.mmAddChild=function(parentId){
+    if(!mm.cur)return;
+    var parent=mm.cur.nodes.find(function(x){return x.id===parentId;});if(!parent)return;
+    var children=mm.cur.nodes.filter(function(x){return x.parentId===parentId;});
+    var newId=uid(),nx=parent.x+220,ny=children.length===0?parent.y:children[children.length-1].y+70;
+    mm.cur.nodes.push({id:newId,text:'Новый узел',x:nx,y:ny,parentId:parentId});
+    mmSave();mmRedraw();mmSelectNode(newId);
+    requestAnimationFrame(function(){var el=document.getElementById('mm-node-'+newId);if(el)mmEditNode(newId,el);});
   };
+
+  window.mmAddSibling=function(nodeId){
+    if(!mm.cur)return;
+    var n=mm.cur.nodes.find(function(x){return x.id===nodeId;});if(!n||!n.parentId)return;
+    var newId=uid();
+    mm.cur.nodes.push({id:newId,text:'Новый узел',x:n.x,y:n.y+70,parentId:n.parentId});
+    mmSave();mmRedraw();mmSelectNode(newId);
+    requestAnimationFrame(function(){var el=document.getElementById('mm-node-'+newId);if(el)mmEditNode(newId,el);});
+  };
+
+  window.mmDelNode=function(nodeId){
+    if(!mm.cur)return;
+    function collectIds(id){var r=[id];mm.cur.nodes.filter(function(c){return c.parentId===id;}).forEach(function(c){r=r.concat(collectIds(c.id));});return r;}
+    var del=collectIds(nodeId);
+    mm.cur.nodes=mm.cur.nodes.filter(function(n){return del.indexOf(n.id)===-1;});
+    mm.sel=null;mmSave();mmRedraw();
+  };
+
+  window.mmShare=function(){if(mm.cur)mmDoShare(mm.cur);};
+  window.mmShareFromList=function(id){mmLoad();var m=mm.state.maps.find(function(x){return x.id===id;});if(m)mmDoShare(m);};
   function mmDoShare(map){
-    var bid=uid()+uid();
-    var key='mindmap_'+map.id;
-    fetch('/api/save',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({key:key,bid:bid,data:map})
-    }).then(function(r){
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      var url=window.location.origin+'/mindmap.html?id='+map.id+'&bid='+bid;
-      prompt('Ссылка для клиента (скопируй):',url);
-    }).catch(function(err){
-      alert('Ошибка при сохранении на сервер: '+err.message);
-    });
+    var bid=uid()+uid(),key='mindmap_'+map.id;
+    fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:key,bid:bid,data:map})})
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);var url=window.location.origin+'/mindmap.html?id='+map.id+'&bid='+bid;prompt('Ссылка для клиента (скопируй):',url);})
+      .catch(function(err){alert('Ошибка при сохранении на сервер: '+err.message);});
   }
 })();
 </script>
