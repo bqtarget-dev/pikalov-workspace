@@ -4,450 +4,264 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Минд мап</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0a0a0c;--bg2:#111116;
-  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
-  --accent:#7f6ef5;--accent2:#a99ef8;
-  --text:rgba(255,255,255,.92);--text2:rgba(255,255,255,.5);--text3:rgba(255,255,255,.2);
-}
-html,body{height:100%;overflow:hidden;background:#0d0d10;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px}
+html,body{height:100%;overflow:hidden;background:#0d0d10;color:#e0e0ec;font-family:system-ui,-apple-system,sans-serif;font-size:14px}
 
-/* ── Top bar ── */
-#topbar{
-  position:fixed;top:0;left:0;right:0;height:48px;z-index:100;
-  display:flex;align-items:center;gap:10px;padding:0 14px;
-  background:var(--bg);border-bottom:1px solid var(--border);
-}
-#map-name{flex:1;text-align:center;font-size:15px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* top bar */
+#topbar{position:fixed;top:0;left:0;right:0;height:48px;z-index:10;display:flex;align-items:center;gap:10px;padding:0 16px;background:#0a0a0c;border-bottom:1px solid rgba(255,255,255,.07)}
+#map-name{flex:1;text-align:center;font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* ── Action bar ── */
-#actionbar{
-  position:fixed;top:48px;left:0;right:0;height:42px;z-index:100;
-  display:flex;align-items:center;gap:6px;padding:0 14px;
-  background:var(--bg2);border-bottom:1px solid var(--border);
-}
-#sel-label{flex:1;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* action bar */
+#actionbar{position:fixed;top:48px;left:0;right:0;height:44px;z-index:10;display:flex;align-items:center;gap:8px;padding:0 16px;background:#111116;border-bottom:1px solid rgba(255,255,255,.07)}
+#sel-label{flex:1;font-size:12px;color:rgba(255,255,255,.38);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* ── Buttons ── */
-.btn{
-  font-size:12px;padding:5px 12px;border-radius:7px;border:1px solid;
-  cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .12s;
-  background:transparent;white-space:nowrap;flex-shrink:0;
-  color:var(--text2);border-color:var(--border2);
-}
-.btn:disabled{opacity:.22;cursor:default;pointer-events:none}
-.btn:not(:disabled):hover{color:var(--text)}
-.btn-back{font-size:12px}
-.btn-share{color:var(--accent2);background:rgba(127,110,245,.08);border-color:rgba(127,110,245,.25)}
+/* buttons */
+.btn{font-size:12px;padding:5px 12px;border-radius:7px;border:1px solid rgba(255,255,255,.12);cursor:pointer;background:transparent;color:rgba(255,255,255,.5);white-space:nowrap;font-family:inherit;transition:.12s}
+.btn:disabled{opacity:.2;cursor:default;pointer-events:none}
+.btn:not(:disabled):hover{color:#fff}
+.btn-share{color:#a99ef8;background:rgba(127,110,245,.08);border-color:rgba(127,110,245,.28)}
 .btn-share:not(:disabled):hover{background:rgba(127,110,245,.18)}
-.btn-child{color:#a99ef8;border-color:rgba(127,110,245,.3);background:rgba(127,110,245,.06)}
-.btn-child:not(:disabled):hover{background:rgba(127,110,245,.16)}
-.btn-sib{color:#74b8ff;border-color:rgba(74,158,255,.3);background:rgba(74,158,255,.06)}
-.btn-sib:not(:disabled):hover{background:rgba(74,158,255,.16)}
-.btn-del{color:#f55;border-color:rgba(255,85,85,.25)}
-.btn-del:not(:disabled):hover{background:rgba(255,85,85,.08)}
+.btn-child{color:#a99ef8;background:rgba(127,110,245,.07);border-color:rgba(127,110,245,.25)}
+.btn-child:not(:disabled):hover{background:rgba(127,110,245,.18)}
+.btn-sib{color:#74b8ff;background:rgba(74,158,255,.07);border-color:rgba(74,158,255,.25)}
+.btn-sib:not(:disabled):hover{background:rgba(74,158,255,.18)}
+.btn-del{color:#f66;border-color:rgba(255,80,80,.22)}
+.btn-del:not(:disabled):hover{background:rgba(255,80,80,.08)}
 
-/* ── Canvas ── */
-#canvas{
-  position:fixed;top:90px;left:0;right:0;bottom:28px;
-  overflow:auto;background:#0d0d10;
-}
+/* canvas */
+#canvas{position:fixed;top:92px;left:0;right:0;bottom:0;overflow:auto;padding:40px}
 #canvas::-webkit-scrollbar{width:5px;height:5px}
 #canvas::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
-#stage{position:relative}
-#edges{position:absolute;top:0;left:0;pointer-events:none;overflow:visible}
 
-/* ── Nodes ── */
+/* --- CSS flexbox tree --- */
+
+/* A branch = [node-box] [h-line + children-column] */
+.branch{display:flex;align-items:center}
+
+/* Horizontal connector from node to vertical line */
+.h-line{width:24px;height:1.5px;background:rgba(255,255,255,.14);flex-shrink:0}
+
+/* Vertical column of children, border-left = vertical line */
+.children{display:flex;flex-direction:column;gap:10px;padding:8px 0;border-left:1.5px solid rgba(255,255,255,.14)}
+
+/* Each child entry: horizontal connector via ::before + recursive branch */
+.child-entry{display:flex;align-items:center;padding-left:24px;position:relative}
+.child-entry::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:24px;height:1.5px;background:rgba(255,255,255,.14)}
+
+/* Node box */
 .node{
-  position:absolute;transform:translate(-50%,-50%);
-  background:#1c1c26;border:1.5px solid var(--border2);
-  border-radius:10px;padding:8px 16px;
-  font-size:13px;line-height:1.4;
-  text-align:center;word-break:break-word;
+  padding:8px 14px;border-radius:9px;
+  border:1.5px solid rgba(255,255,255,.13);
+  background:#1c1c26;
   cursor:pointer;user-select:none;
-  max-width:160px;min-width:56px;
+  font-size:13px;line-height:1.4;
+  text-align:center;word-break:break-word;max-width:160px;
+  transition:.1s;
 }
-.node:hover{box-shadow:0 0 0 2px rgba(255,255,255,.1)}
-.node.sel{box-shadow:0 0 0 2.5px var(--accent)!important;z-index:10}
-.root-node{background:var(--accent);color:#fff!important;font-weight:600;border-color:var(--accent)!important}
-.root-node.sel{box-shadow:0 0 0 2.5px rgba(255,255,255,.6)!important}
+.node:hover{border-color:rgba(255,255,255,.28)}
+.node.sel{border-color:#7f6ef5;box-shadow:0 0 0 2px rgba(127,110,245,.3)}
+.node.root{background:#7f6ef5;border-color:#7f6ef5;color:#fff;font-weight:600}
+.node.root.sel{box-shadow:0 0 0 2px rgba(255,255,255,.4)}
+/* inline edit input inherits node styles */
+.node input{background:transparent;border:none;outline:none;color:inherit;font:inherit;text-align:center;width:100%;display:block;min-width:40px}
 
-/* ── Inline editor ── */
-#editor{
-  position:fixed;z-index:300;display:none;
-  background:#1f1f2e;border:1.5px solid var(--accent);border-radius:8px;
-  padding:7px 12px;color:#fff;
-  font-family:'DM Sans',sans-serif;font-size:13px;
-  text-align:center;outline:none;min-width:80px;
-}
-
-/* ── Bottom hint ── */
-#hint{
-  position:fixed;bottom:0;left:0;right:0;height:28px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:10px;color:var(--text3);letter-spacing:.05em;
-  background:var(--bg);border-top:1px solid var(--border);
-  pointer-events:none;
-}
-
-/* ── Error screen ── */
-#errscreen{display:none;position:fixed;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:#0d0d10;color:var(--text2)}
+/* error screen */
+#errscreen{display:none;position:fixed;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#0d0d10;color:rgba(255,255,255,.4)}
 #errscreen.show{display:flex}
 </style>
 </head>
 <body>
 
 <div id="topbar">
-  <button class="btn btn-back" onclick="goBack()">← Назад</button>
+  <button class="btn" onclick="goBack()">← Назад</button>
   <span id="map-name"></span>
   <button class="btn btn-share" onclick="doShare()">Поделиться</button>
 </div>
 
 <div id="actionbar">
   <span id="sel-label">Выберите узел</span>
-  <button class="btn btn-child" id="btn-child" onclick="addChild()"    disabled title="Tab — добавить дочерний">+ Дочерний</button>
-  <button class="btn btn-sib"   id="btn-sib"   onclick="addSibling()"  disabled title="Enter — добавить соседний">+ Соседний</button>
-  <button class="btn btn-del"   id="btn-del"   onclick="deleteNode()"  disabled title="Del — удалить">− Удалить</button>
+  <button class="btn btn-child" id="btn-child" onclick="addChild()"    disabled>+ Дочерний</button>
+  <button class="btn btn-sib"   id="btn-sib"   onclick="addSibling()"  disabled>+ Соседний</button>
+  <button class="btn btn-del"   id="btn-del"   onclick="delNode()"     disabled>− Удалить</button>
 </div>
 
-<div id="canvas">
-  <div id="stage">
-    <svg id="edges"></svg>
-  </div>
-</div>
-
-<input id="editor" type="text" />
-
-<div id="hint">Tab — дочерний &nbsp;·&nbsp; Enter — соседний &nbsp;·&nbsp; Del — удалить &nbsp;·&nbsp; двойной клик — переименовать</div>
+<div id="canvas"></div>
 
 <div id="errscreen">
-  <div id="err-msg">Карта не найдена</div>
-  <button class="btn" style="font-size:13px;padding:8px 18px;margin-top:8px" onclick="window.location.href='index.html'">← К списку</button>
+  <span id="err-msg">Карта не найдена</span>
+  <button class="btn" style="font-size:13px;padding:8px 18px" onclick="location.href='index.html'">← К списку</button>
 </div>
 
 <script>
-(function () {
 'use strict';
+const LSKEY = 'pm_mindmap_v1';
+let state = {maps:[]}, cur = null, sel = null;
 
-// ── Constants ──────────────────────────────────────────────────────────────
-var LW   = 210;   // horizontal pixels between levels
-var SH   = 70;    // vertical pixels per leaf slot
-var PAD  = 80;    // canvas padding
-var NW   = 150;   // approximate node width (for edge anchoring)
-var COLS = ['#7f6ef5','#4A9EFF','#50C878','#FF8C42','#FF6BAF','#FFD166'];
-
-// ── State ──────────────────────────────────────────────────────────────────
-var state = { maps: [] };
-var cur   = null;   // { id, name, nodes[] }
-var sel   = null;   // selected node id
-var editId = null;  // id of node currently being edited
-
-// ── Persistence ────────────────────────────────────────────────────────────
-function uid() { return Math.random().toString(36).slice(2, 9); }
+const uid = () => Math.random().toString(36).slice(2, 9);
 
 function loadState() {
-  try { state = JSON.parse(localStorage.getItem('pm_mindmap_v1')) || { maps: [] }; }
-  catch (e) { state = { maps: [] }; }
+  try { state = JSON.parse(localStorage.getItem(LSKEY)) || {maps:[]}; }
+  catch(e) { state = {maps:[]}; }
 }
 
 function saveState() {
   if (cur) {
-    var m = state.maps.find(function (x) { return x.id === cur.id; });
+    const m = state.maps.find(x => x.id === cur.id);
     if (m) m.nodes = cur.nodes;
   }
-  try { localStorage.setItem('pm_mindmap_v1', JSON.stringify(state)); } catch (e) {}
+  try { localStorage.setItem(LSKEY, JSON.stringify(state)); } catch(e) {}
 }
 
-// ── Layout: horizontal left-to-right tree ─────────────────────────────────
-// Returns { nodeId: { x, y } } where x,y = center of node
-function computeLayout(nodes) {
-  var root = nodes.find(function (n) { return !n.parentId; });
-  if (!root) return {};
+// Build DOM subtree starting from nodeId
+function buildBranch(nodeId) {
+  const n = cur.nodes.find(x => x.id === nodeId);
+  if (!n) return null;
+  const kids = cur.nodes.filter(x => x.parentId === nodeId);
 
-  var pos = {};
-  var leafY = PAD;
+  const branch = document.createElement('div');
+  branch.className = 'branch';
 
-  function place(id, depth) {
-    var ch = nodes.filter(function (n) { return n.parentId === id; });
-    var x  = PAD + depth * LW;
-    if (ch.length === 0) {
-      pos[id] = { x: x, y: leafY };
-      leafY += SH;
-    } else {
-      ch.forEach(function (c) { place(c.id, depth + 1); });
-      var ys  = ch.map(function (c) { return pos[c.id].y; });
-      pos[id] = { x: x, y: (Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2 };
-    }
-  }
+  const box = document.createElement('div');
+  box.className = 'node' + (!n.parentId ? ' root' : '') + (nodeId === sel ? ' sel' : '');
+  box.id = 'n-' + nodeId;
+  box.textContent = n.text;
+  box.onclick = e => { e.stopPropagation(); select(nodeId); };
+  box.ondblclick = e => { e.stopPropagation(); startEdit(nodeId); };
+  branch.appendChild(box);
 
-  place(root.id, 0);
-  return pos;
-}
+  if (kids.length) {
+    const hline = document.createElement('div');
+    hline.className = 'h-line';
+    branch.appendChild(hline);
 
-// Returns { depths: {id→depth}, branchCol: {id→color} }
-function computeDepths(nodes) {
-  var depths = {}, branchCol = {};
-  var root = nodes.find(function (n) { return !n.parentId; });
-  if (!root) return { depths: depths, branchCol: branchCol };
-
-  function walk(id, depth, col) {
-    depths[id]    = depth;
-    branchCol[id] = col;
-    var ch = nodes.filter(function (n) { return n.parentId === id; });
-    ch.forEach(function (c, i) {
-      walk(c.id, depth + 1, depth === 0 ? COLS[i % COLS.length] : col);
+    const col = document.createElement('div');
+    col.className = 'children';
+    kids.forEach(k => {
+      const entry = document.createElement('div');
+      entry.className = 'child-entry';
+      entry.appendChild(buildBranch(k.id));
+      col.appendChild(entry);
     });
+    branch.appendChild(col);
   }
-  walk(root.id, 0, COLS[0]);
-  return { depths: depths, branchCol: branchCol };
+
+  return branch;
 }
 
-// ── Render ─────────────────────────────────────────────────────────────────
 function render() {
-  var canvas = document.getElementById('canvas');
-  var stage  = document.getElementById('stage');
-  var svg    = document.getElementById('edges');
+  const canvas = document.getElementById('canvas');
+  canvas.innerHTML = '';
   if (!cur) return;
-
-  var nodes  = cur.nodes;
-  var pos    = computeLayout(nodes);
-  var info   = computeDepths(nodes);
-  var depths = info.depths;
-  var bcols  = info.branchCol;
-
-  var xs = Object.keys(pos).map(function (k) { return pos[k].x; });
-  var ys = Object.keys(pos).map(function (k) { return pos[k].y; });
-  var w  = Math.max((xs.length ? Math.max.apply(null, xs) : 0) + PAD + NW, canvas.clientWidth);
-  var h  = Math.max((ys.length ? Math.max.apply(null, ys) : 0) + PAD, canvas.clientHeight);
-
-  stage.style.width  = w + 'px';
-  stage.style.height = h + 'px';
-  svg.setAttribute('width',  w);
-  svg.setAttribute('height', h);
-
-  Array.from(stage.querySelectorAll('.node')).forEach(function (el) { el.remove(); });
-  svg.innerHTML = '';
-
-  // SVG edges: bezier from right side of parent to left side of child
-  nodes.forEach(function (n) {
-    if (!n.parentId) return;
-    var pp = pos[n.parentId], cp = pos[n.id];
-    if (!pp || !cp) return;
-    var col = bcols[n.id] || COLS[0];
-    var x1  = pp.x + NW / 2, y1 = pp.y;
-    var x2  = cp.x - NW / 2, y2 = cp.y;
-    var mx  = (x1 + x2) / 2;
-    var p   = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    p.setAttribute('d', 'M' + x1 + ',' + y1 + ' C' + mx + ',' + y1 + ' ' + mx + ',' + y2 + ' ' + x2 + ',' + y2);
-    p.setAttribute('fill', 'none');
-    p.setAttribute('stroke', col);
-    p.setAttribute('stroke-width', '1.5');
-    p.setAttribute('opacity', '0.5');
-    svg.appendChild(p);
-  });
-
-  // Node divs
-  nodes.forEach(function (n) {
-    var p  = pos[n.id]; if (!p) return;
-    var d  = depths[n.id] || 0;
-    var el = document.createElement('div');
-    el.className   = 'node' + (d === 0 ? ' root-node' : '') + (n.id === sel ? ' sel' : '');
-    el.id          = 'n-' + n.id;
-    el.textContent = n.text;
-    el.style.left  = p.x + 'px';
-    el.style.top   = p.y + 'px';
-    if (d > 0) {
-      var col = bcols[n.id] || COLS[0];
-      el.style.borderColor = col;
-      el.style.color       = col;
-    }
-    el.addEventListener('click',   function (e) { e.stopPropagation(); select(n.id); });
-    el.addEventListener('dblclick', function (e) { e.stopPropagation(); startEdit(n.id); });
-    stage.appendChild(el);
-  });
-
+  const root = cur.nodes.find(n => !n.parentId);
+  if (root) canvas.appendChild(buildBranch(root.id));
   updateBar();
 }
 
-// ── Selection ──────────────────────────────────────────────────────────────
 function select(id) {
+  const prev = document.querySelector('.node.sel');
+  if (prev) prev.classList.remove('sel');
   sel = id;
-  Array.from(document.querySelectorAll('#stage .node')).forEach(function (el) {
-    el.classList.toggle('sel', el.id === 'n-' + id);
-  });
+  if (id) {
+    const el = document.getElementById('n-' + id);
+    if (el) el.classList.add('sel');
+  }
   updateBar();
 }
 
 function updateBar() {
-  var n    = sel && cur ? cur.nodes.find(function (x) { return x.id === sel; }) : null;
-  var hasp = !!(n && n.parentId);
-  document.getElementById('sel-label').textContent    = n ? '«' + n.text + '»' : 'Выберите узел';
+  const n = sel ? cur.nodes.find(x => x.id === sel) : null;
+  const hasp = !!(n && n.parentId);
+  document.getElementById('sel-label').textContent = n ? '«' + n.text + '»' : 'Выберите узел';
   document.getElementById('btn-child').disabled = !n;
   document.getElementById('btn-sib').disabled   = !hasp;
   document.getElementById('btn-del').disabled   = !hasp;
 }
 
-// ── Inline editor ──────────────────────────────────────────────────────────
 function startEdit(id) {
-  var nodeId = id || sel;
-  if (!nodeId || !cur) return;
-  var n  = cur.nodes.find(function (x) { return x.id === nodeId; });
-  var el = document.getElementById('n-' + nodeId);
-  if (!n || !el) return;
-  var r  = el.getBoundingClientRect();
-  var ed = document.getElementById('editor');
-  editId             = nodeId;
-  ed.value           = n.text;
-  ed.style.left      = r.left + 'px';
-  ed.style.top       = r.top  + 'px';
-  ed.style.width     = Math.max(r.width, 100) + 'px';
-  ed.style.minHeight = r.height + 'px';
-  ed.style.display   = 'block';
-  el.style.visibility = 'hidden';
-  ed.focus();
-  ed.select();
+  const box = document.getElementById('n-' + id);
+  const n = cur.nodes.find(x => x.id === id);
+  if (!box || !n) return;
+  const prev = box.textContent;
+  box.textContent = '';
+  const inp = document.createElement('input');
+  inp.value = prev;
+  box.appendChild(inp);
+  inp.focus(); inp.select();
+
+  let committed = false;
+  function commit() {
+    if (committed) return; committed = true;
+    const v = inp.value.trim();
+    if (v) n.text = v;
+    saveState(); render(); select(id);
+  }
+  inp.onblur = commit;
+  inp.onkeydown = e => {
+    if (e.key === 'Enter')  { e.preventDefault(); inp.blur(); }
+    if (e.key === 'Escape') { committed = true; render(); select(id); }
+  };
 }
 
-function commitEdit() {
-  if (!editId || !cur) return;
-  var nodeId = editId;
-  editId = null;  // null first so blur re-entry is a no-op
-  var ed = document.getElementById('editor');
-  var n  = cur.nodes.find(function (x) { return x.id === nodeId; });
-  var v  = ed.value.trim();
-  if (n && v) n.text = v;
-  var el = document.getElementById('n-' + nodeId);
-  if (el) el.style.visibility = '';
-  ed.style.display = 'none';
-  saveState();
-  render();
-  select(nodeId);
-}
-
-function cancelEdit() {
-  if (!editId) return;
-  var nodeId = editId;
-  editId = null;
-  var el = document.getElementById('n-' + nodeId);
-  if (el) el.style.visibility = '';
-  document.getElementById('editor').style.display = 'none';
-}
-
-(function () {
-  var ed = document.getElementById('editor');
-  ed.addEventListener('blur',    function ()  { if (editId) commitEdit(); });
-  ed.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter')  { e.preventDefault(); commitEdit(); }
-    if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
-  });
-})();
-
-// ── Node operations ────────────────────────────────────────────────────────
 function addChild() {
   if (!cur || !sel) return;
-  var id = uid();
-  cur.nodes.push({ id: id, text: 'Узел', parentId: sel });
+  const id = uid();
+  cur.nodes.push({id, text: 'Узел', parentId: sel});
   saveState(); render(); select(id);
-  requestAnimationFrame(function () { startEdit(id); });
+  requestAnimationFrame(() => startEdit(id));
 }
 
 function addSibling() {
   if (!cur || !sel) return;
-  var n = cur.nodes.find(function (x) { return x.id === sel; });
+  const n = cur.nodes.find(x => x.id === sel);
   if (!n || !n.parentId) return;
-  var id = uid();
-  cur.nodes.push({ id: id, text: 'Узел', parentId: n.parentId });
+  const id = uid();
+  cur.nodes.push({id, text: 'Узел', parentId: n.parentId});
   saveState(); render(); select(id);
-  requestAnimationFrame(function () { startEdit(id); });
+  requestAnimationFrame(() => startEdit(id));
 }
 
-function deleteNode() {
+function delNode() {
   if (!cur || !sel) return;
-  var n = cur.nodes.find(function (x) { return x.id === sel; });
+  const n = cur.nodes.find(x => x.id === sel);
   if (!n || !n.parentId) return;
-  function subtree(id) {
-    var r = [id];
-    cur.nodes.filter(function (c) { return c.parentId === id; })
-             .forEach(function (c) { r = r.concat(subtree(c.id)); });
-    return r;
-  }
-  var del = subtree(sel);
-  cur.nodes = cur.nodes.filter(function (x) { return del.indexOf(x.id) === -1; });
-  sel = null;
-  saveState(); render();
+  const subtree = id => [id, ...cur.nodes.filter(c => c.parentId === id).flatMap(c => subtree(c.id))];
+  const del = new Set(subtree(sel));
+  cur.nodes = cur.nodes.filter(x => !del.has(x.id));
+  sel = null; saveState(); render();
 }
+
+document.getElementById('canvas').onclick = e => {
+  if (e.target === e.currentTarget) { sel = null; render(); }
+};
 
 window.addChild   = addChild;
 window.addSibling = addSibling;
-window.deleteNode = deleteNode;
+window.delNode    = delNode;
 
-// ── Keyboard ───────────────────────────────────────────────────────────────
-document.addEventListener('keydown', function (e) {
-  if (!cur) return;
-  if (document.getElementById('editor').style.display !== 'none') return;
-  var n = sel ? cur.nodes.find(function (x) { return x.id === sel; }) : null;
-  switch (e.key) {
-    case 'Tab':
-      e.preventDefault();
-      if (sel) addChild();
-      break;
-    case 'Enter':
-      e.preventDefault();
-      if (sel) addSibling();
-      break;
-    case 'F2':
-      e.preventDefault();
-      if (sel) startEdit(sel);
-      break;
-    case 'Delete':
-    case 'Backspace':
-      if (n && n.parentId) { e.preventDefault(); deleteNode(); }
-      break;
-  }
-});
+window.goBack = () => { saveState(); window.close(); location.href = 'index.html'; };
 
-// Deselect on background click
-document.getElementById('canvas').addEventListener('click', function (e) {
-  var t = e.target;
-  if (t === this || t.id === 'stage' || t.id === 'edges' || t.tagName === 'path') select(null);
-});
-
-window.addEventListener('resize', function () { if (cur) render(); }, { passive: true });
-
-// ── Back / Share ───────────────────────────────────────────────────────────
-window.goBack = function () {
-  saveState();
-  window.close();
-  requestAnimationFrame(function () { window.location.href = 'index.html'; });
-};
-
-window.doShare = function () {
+window.doShare = () => {
   if (!cur) return;
   saveState();
-  var map = state.maps.find(function (x) { return x.id === cur.id; }) || cur;
-  var bid = uid() + uid();
+  const map = state.maps.find(x => x.id === cur.id) || cur;
+  const bid = uid() + uid();
   fetch('/api/save', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key: 'mindmap_' + map.id, bid: bid, data: map })
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({key: 'mindmap_' + map.id, bid, data: map})
   })
-    .then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      prompt('Ссылка для клиента:', window.location.origin + '/mindmap.html?id=' + map.id + '&bid=' + bid);
-    })
-    .catch(function (err) { alert('Ошибка сохранения: ' + err.message); });
+  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); prompt('Ссылка:', location.origin + '/mindmap.html?id=' + map.id + '&bid=' + bid); })
+  .catch(err => alert('Ошибка: ' + err.message));
 };
 
-// ── Boot ───────────────────────────────────────────────────────────────────
-var mapId = new URLSearchParams(window.location.search).get('id');
+// Boot
+const mapId = new URLSearchParams(location.search).get('id');
 if (!mapId) {
   document.getElementById('errscreen').classList.add('show');
 } else {
   loadState();
-  var map = state.maps.find(function (m) { return m.id === mapId; });
+  const map = state.maps.find(m => m.id === mapId);
   if (!map) {
     document.getElementById('err-msg').textContent = 'Карта не найдена (id: ' + mapId + ')';
     document.getElementById('errscreen').classList.add('show');
@@ -456,12 +270,10 @@ if (!mapId) {
     document.getElementById('map-name').textContent = cur.name;
     document.title = cur.name + ' — Минд мап';
     render();
-    var root = cur.nodes.find(function (n) { return !n.parentId; });
+    const root = cur.nodes.find(n => !n.parentId);
     if (root) select(root.id);
   }
 }
-
-})();
 </script>
 </body>
 </html>
