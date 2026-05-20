@@ -4,297 +4,463 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Минд мап</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#0a0a0c;--bg2:#111116;--bg3:#18181f;--bg4:#1f1f28;--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);--accent:#7f6ef5;--accent2:#a99ef8;--text:rgba(255,255,255,.92);--text2:rgba(255,255,255,.45);--text3:rgba(255,255,255,.22)}
+:root{
+  --bg:#0a0a0c;--bg2:#111116;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --accent:#7f6ef5;--accent2:#a99ef8;
+  --text:rgba(255,255,255,.92);--text2:rgba(255,255,255,.5);--text3:rgba(255,255,255,.2);
+}
 html,body{height:100%;overflow:hidden;background:#0d0d10;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px}
 
-/* Toolbar */
-#mm-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#0a0a0c;border-bottom:.5px solid var(--border);gap:12px;flex-shrink:0;height:48px}
-#mm-bar-name{font-size:15px;font-weight:500;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mm-bar-btn{font-size:12px;border-radius:7px;padding:6px 13px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap;border:.5px solid}
-.mm-bar-back{color:var(--text2);background:var(--bg3);border-color:var(--border2)}.mm-bar-back:hover{color:var(--text)}
-.mm-bar-share{color:var(--accent2);background:rgba(127,110,245,.1);border-color:rgba(127,110,245,.3)}.mm-bar-share:hover{background:rgba(127,110,245,.2)}
+/* ── Top bar ── */
+#topbar{
+  position:fixed;top:0;left:0;right:0;height:48px;z-index:100;
+  display:flex;align-items:center;gap:10px;padding:0 14px;
+  background:var(--bg);border-bottom:1px solid var(--border);
+}
+#map-name{flex:1;text-align:center;font-size:15px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* Canvas */
-#mm-area{position:fixed;top:48px;left:0;right:0;bottom:0;overflow:hidden;cursor:default;user-select:none}
-#mm-canvas{position:absolute;inset:0}
-#mm-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+/* ── Action bar ── */
+#actionbar{
+  position:fixed;top:48px;left:0;right:0;height:42px;z-index:100;
+  display:flex;align-items:center;gap:6px;padding:0 14px;
+  background:var(--bg2);border-bottom:1px solid var(--border);
+}
+#sel-label{flex:1;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* Nodes */
-.mm-node{position:absolute;background:#1a1a24;border:1.5px solid var(--border2);border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;transform:translate(-50%,-50%);user-select:none;transition:box-shadow .12s;max-width:180px;text-align:center;word-break:break-word;line-height:1.4}
-.mm-node:hover{box-shadow:0 0 0 2px rgba(127,110,245,.35)}
-.mm-node.mm-selected{box-shadow:0 0 0 2.5px #7f6ef5;z-index:10}
-.mm-node-inp{position:absolute;transform:translate(-50%,-50%);background:#1f1f2c;border:1.5px solid #7f6ef5;border-radius:8px;padding:7px 12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;z-index:20;min-width:100px;text-align:center}
+/* ── Buttons ── */
+.btn{
+  font-size:12px;padding:5px 12px;border-radius:7px;border:1px solid;
+  cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .12s;
+  background:transparent;white-space:nowrap;flex-shrink:0;
+  color:var(--text2);border-color:var(--border2);
+}
+.btn:disabled{opacity:.22;cursor:default;pointer-events:none}
+.btn:not(:disabled):hover{color:var(--text)}
+.btn-back{font-size:12px}
+.btn-share{color:var(--accent2);background:rgba(127,110,245,.08);border-color:rgba(127,110,245,.25)}
+.btn-share:not(:disabled):hover{background:rgba(127,110,245,.18)}
+.btn-child{color:#a99ef8;border-color:rgba(127,110,245,.3);background:rgba(127,110,245,.06)}
+.btn-child:not(:disabled):hover{background:rgba(127,110,245,.16)}
+.btn-sib{color:#74b8ff;border-color:rgba(74,158,255,.3);background:rgba(74,158,255,.06)}
+.btn-sib:not(:disabled):hover{background:rgba(74,158,255,.16)}
+.btn-del{color:#f55;border-color:rgba(255,85,85,.25)}
+.btn-del:not(:disabled):hover{background:rgba(255,85,85,.08)}
 
-/* Hint */
-#mm-hint{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,.18);pointer-events:none;white-space:nowrap;letter-spacing:.04em}
+/* ── Canvas ── */
+#canvas{
+  position:fixed;top:90px;left:0;right:0;bottom:28px;
+  overflow:auto;background:#0d0d10;
+}
+#canvas::-webkit-scrollbar{width:5px;height:5px}
+#canvas::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+#stage{position:relative}
+#edges{position:absolute;top:0;left:0;pointer-events:none;overflow:visible}
 
-/* Error */
-#mm-error{display:none;position:fixed;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:#0d0d10;color:var(--text2);font-size:14px}
-#mm-error.show{display:flex}
+/* ── Nodes ── */
+.node{
+  position:absolute;transform:translate(-50%,-50%);
+  background:#1c1c26;border:1.5px solid var(--border2);
+  border-radius:10px;padding:8px 16px;
+  font-size:13px;line-height:1.4;
+  text-align:center;word-break:break-word;
+  cursor:pointer;user-select:none;
+  max-width:160px;min-width:56px;
+}
+.node:hover{box-shadow:0 0 0 2px rgba(255,255,255,.1)}
+.node.sel{box-shadow:0 0 0 2.5px var(--accent)!important;z-index:10}
+.root-node{background:var(--accent);color:#fff!important;font-weight:600;border-color:var(--accent)!important}
+.root-node.sel{box-shadow:0 0 0 2.5px rgba(255,255,255,.6)!important}
+
+/* ── Inline editor ── */
+#editor{
+  position:fixed;z-index:300;display:none;
+  background:#1f1f2e;border:1.5px solid var(--accent);border-radius:8px;
+  padding:7px 12px;color:#fff;
+  font-family:'DM Sans',sans-serif;font-size:13px;
+  text-align:center;outline:none;min-width:80px;
+}
+
+/* ── Bottom hint ── */
+#hint{
+  position:fixed;bottom:0;left:0;right:0;height:28px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:var(--text3);letter-spacing:.05em;
+  background:var(--bg);border-top:1px solid var(--border);
+  pointer-events:none;
+}
+
+/* ── Error screen ── */
+#errscreen{display:none;position:fixed;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:#0d0d10;color:var(--text2)}
+#errscreen.show{display:flex}
 </style>
 </head>
 <body>
 
-<div id="mm-bar">
-  <button class="mm-bar-btn mm-bar-back" onclick="mmBack()">← Назад</button>
-  <span id="mm-bar-name"></span>
-  <button class="mm-bar-btn mm-bar-share" onclick="mmShare()">Поделиться</button>
+<div id="topbar">
+  <button class="btn btn-back" onclick="goBack()">← Назад</button>
+  <span id="map-name"></span>
+  <button class="btn btn-share" onclick="doShare()">Поделиться</button>
 </div>
 
-<div id="mm-area">
-  <div id="mm-canvas">
-    <svg id="mm-svg"></svg>
+<div id="actionbar">
+  <span id="sel-label">Выберите узел</span>
+  <button class="btn btn-child" id="btn-child" onclick="addChild()"    disabled title="Tab — добавить дочерний">+ Дочерний</button>
+  <button class="btn btn-sib"   id="btn-sib"   onclick="addSibling()"  disabled title="Enter — добавить соседний">+ Соседний</button>
+  <button class="btn btn-del"   id="btn-del"   onclick="deleteNode()"  disabled title="Del — удалить">− Удалить</button>
+</div>
+
+<div id="canvas">
+  <div id="stage">
+    <svg id="edges"></svg>
   </div>
 </div>
 
-<div id="mm-hint">Клик — выбрать · Tab — дочерний · Enter — соседний · Delete — удалить · Двойной клик — редактировать</div>
+<input id="editor" type="text" />
 
-<div id="mm-error">
-  <div id="mm-error-msg">Карта не найдена</div>
-  <button class="mm-bar-btn mm-bar-back" onclick="window.location.href='index.html'">← Вернуться к списку</button>
+<div id="hint">Tab — дочерний &nbsp;·&nbsp; Enter — соседний &nbsp;·&nbsp; Del — удалить &nbsp;·&nbsp; двойной клик — переименовать</div>
+
+<div id="errscreen">
+  <div id="err-msg">Карта не найдена</div>
+  <button class="btn" style="font-size:13px;padding:8px 18px;margin-top:8px" onclick="window.location.href='index.html'">← К списку</button>
 </div>
 
 <script>
-(function(){
-  var COLORS=['#7f6ef5','#4A9EFF','#FF8C42','#50C878'];
-  var mm={
-    state:{maps:[]},cur:null,sel:null,
-    pan:{x:0,y:0},drag:null,panDrag:null,
-    editing:false,rafId:null,pendingMouse:null
-  };
+(function () {
+'use strict';
 
-  // ── STORAGE ──
-  function uid(){return Math.random().toString(36).slice(2,9);}
-  function mmLoad(){try{mm.state=JSON.parse(localStorage.getItem('pm_mindmap_v1'))||{maps:[]};}catch(e){mm.state={maps:[]};}}
-  function mmSave(){
-    if(mm.cur){var m=mm.state.maps.find(function(x){return x.id===mm.cur.id;});if(m)m.nodes=mm.cur.nodes;}
-    try{localStorage.setItem('pm_mindmap_v1',JSON.stringify(mm.state));}catch(e){}
+// ── Constants ──────────────────────────────────────────────────────────────
+var LW   = 210;   // horizontal pixels between levels
+var SH   = 70;    // vertical pixels per leaf slot
+var PAD  = 80;    // canvas padding
+var NW   = 150;   // approximate node width (for edge anchoring)
+var COLS = ['#7f6ef5','#4A9EFF','#50C878','#FF8C42','#FF6BAF','#FFD166'];
+
+// ── State ──────────────────────────────────────────────────────────────────
+var state = { maps: [] };
+var cur   = null;   // { id, name, nodes[] }
+var sel   = null;   // selected node id
+var editId = null;  // id of node currently being edited
+
+// ── Persistence ────────────────────────────────────────────────────────────
+function uid() { return Math.random().toString(36).slice(2, 9); }
+
+function loadState() {
+  try { state = JSON.parse(localStorage.getItem('pm_mindmap_v1')) || { maps: [] }; }
+  catch (e) { state = { maps: [] }; }
+}
+
+function saveState() {
+  if (cur) {
+    var m = state.maps.find(function (x) { return x.id === cur.id; });
+    if (m) m.nodes = cur.nodes;
   }
+  try { localStorage.setItem('pm_mindmap_v1', JSON.stringify(state)); } catch (e) {}
+}
 
-  // ── HELPERS ──
-  function buildDepths(nodes){
-    var depths={},root=nodes.find(function(n){return !n.parentId;});
-    if(!root)return depths;
-    var q=[{id:root.id,d:0}],vis={};
-    while(q.length){
-      var it=q.shift();if(vis[it.id])continue;vis[it.id]=true;depths[it.id]=it.d;
-      nodes.filter(function(n){return n.parentId===it.id;}).forEach(function(n){q.push({id:n.id,d:it.d+1});});
+// ── Layout: horizontal left-to-right tree ─────────────────────────────────
+// Returns { nodeId: { x, y } } where x,y = center of node
+function computeLayout(nodes) {
+  var root = nodes.find(function (n) { return !n.parentId; });
+  if (!root) return {};
+
+  var pos = {};
+  var leafY = PAD;
+
+  function place(id, depth) {
+    var ch = nodes.filter(function (n) { return n.parentId === id; });
+    var x  = PAD + depth * LW;
+    if (ch.length === 0) {
+      pos[id] = { x: x, y: leafY };
+      leafY += SH;
+    } else {
+      ch.forEach(function (c) { place(c.id, depth + 1); });
+      var ys  = ch.map(function (c) { return pos[c.id].y; });
+      pos[id] = { x: x, y: (Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2 };
     }
-    return depths;
-  }
-  function sx(nx){var a=document.getElementById('mm-area');return nx+(a?a.clientWidth/2:500);}
-  function sy(ny){var a=document.getElementById('mm-area');return ny+(a?a.clientHeight/2:400);}
-  function getCanvas(){return document.getElementById('mm-canvas');}
-  function getSvg(){return document.getElementById('mm-svg');}
-  function mmSetPan(){var c=getCanvas();if(c)c.style.transform='translate('+mm.pan.x+'px,'+mm.pan.y+'px)';}
-
-  // ── INIT ──
-  function mmInit(mapId){
-    mmLoad();
-    var map=mm.state.maps.find(function(m){return m.id===mapId;});
-    if(!map){
-      var err=document.getElementById('mm-error');
-      var msg=document.getElementById('mm-error-msg');
-      if(msg)msg.textContent='Карта не найдена (id: '+mapId+')';
-      if(err)err.classList.add('show');
-      return;
-    }
-    mm.cur=JSON.parse(JSON.stringify(map));
-    mm.sel=null;mm.pan={x:0,y:0};mm.editing=false;mm.drag=null;mm.panDrag=null;
-    var nameEl=document.getElementById('mm-bar-name');
-    if(nameEl)nameEl.textContent=mm.cur.name;
-    document.title=mm.cur.name+' — Минд мап';
-    var canvas=getCanvas();if(canvas)canvas.style.willChange='transform';
-    requestAnimationFrame(function(){requestAnimationFrame(mmRedraw);});
   }
 
-  // ── BACK ──
-  window.mmBack=function(){
-    mmSave();
-    window.close();
-    // Fallback: if close() didn't close (tab not opened by script), redirect
-    requestAnimationFrame(function(){window.location.href='index.html';});
-  };
+  place(root.id, 0);
+  return pos;
+}
 
-  // ── RENDER ──
-  function mmRedraw(){
-    var canvas=getCanvas(),svg=getSvg();if(!canvas||!svg||!mm.cur)return;
-    Array.from(canvas.querySelectorAll('.mm-node,.mm-node-inp')).forEach(function(n){n.remove();});
-    svg.innerHTML='';
-    var nodes=mm.cur.nodes,depths=buildDepths(nodes);
-    nodes.forEach(function(n){if(n.parentId)mmDrawLine(n,nodes,depths);});
-    nodes.forEach(function(n){mmMakeNodeEl(n,depths[n.id]||0);});
-    mmSetPan();
-  }
+// Returns { depths: {id→depth}, branchCol: {id→color} }
+function computeDepths(nodes) {
+  var depths = {}, branchCol = {};
+  var root = nodes.find(function (n) { return !n.parentId; });
+  if (!root) return { depths: depths, branchCol: branchCol };
 
-  function mmDrawLine(n,nodes,depths){
-    var p=nodes.find(function(x){return x.id===n.parentId;});if(!p)return;
-    var d=depths[n.id]||1,color=COLORS[Math.min(d-1,COLORS.length-1)];
-    var x1=sx(p.x),y1=sy(p.y),x2=sx(n.x),y2=sy(n.y),mx=(x1+x2)/2;
-    var path=document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.id='mm-line-'+n.id;
-    path.setAttribute('d','M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2);
-    path.setAttribute('fill','none');path.setAttribute('stroke',color);
-    path.setAttribute('stroke-width','2');path.setAttribute('opacity','0.65');
-    getSvg().appendChild(path);
-  }
-
-  function mmMakeNodeEl(n,d){
-    var color=COLORS[Math.min(Math.max(d-1,0),COLORS.length-1)];
-    var el=document.createElement('div');
-    el.className='mm-node'+(n.id===mm.sel?' mm-selected':'');
-    el.id='mm-node-'+n.id;el.textContent=n.text;
-    el.style.left=sx(n.x)+'px';el.style.top=sy(n.y)+'px';
-    if(d===0){el.style.background='#7f6ef5';el.style.color='#fff';el.style.borderColor='#7f6ef5';el.style.fontWeight='600';}
-    else{el.style.borderColor=color;el.style.color=color;}
-    el.addEventListener('mousedown',function(e){
-      if(mm.editing)return;
-      e.stopPropagation();
-      mmSelectNode(n.id);
-      mm.drag={nid:n.id,sx:e.clientX,sy:e.clientY,ox:n.x,oy:n.y};
+  function walk(id, depth, col) {
+    depths[id]    = depth;
+    branchCol[id] = col;
+    var ch = nodes.filter(function (n) { return n.parentId === id; });
+    ch.forEach(function (c, i) {
+      walk(c.id, depth + 1, depth === 0 ? COLS[i % COLS.length] : col);
     });
-    el.addEventListener('dblclick',function(e){e.stopPropagation();mmEditNode(n.id,el);});
-    getCanvas().appendChild(el);
   }
+  walk(root.id, 0, COLS[0]);
+  return { depths: depths, branchCol: branchCol };
+}
 
-  function mmSelectNode(id){
-    var prev=document.querySelector('#mm-canvas .mm-node.mm-selected');
-    if(prev)prev.classList.remove('mm-selected');
-    mm.sel=id;
-    if(id){var el=document.getElementById('mm-node-'+id);if(el)el.classList.add('mm-selected');}
-  }
+// ── Render ─────────────────────────────────────────────────────────────────
+function render() {
+  var canvas = document.getElementById('canvas');
+  var stage  = document.getElementById('stage');
+  var svg    = document.getElementById('edges');
+  if (!cur) return;
 
-  function mmEditNode(nodeId,el){
-    if(mm.editing)return;
-    mm.editing=true;
-    var n=mm.cur.nodes.find(function(x){return x.id===nodeId;});
-    if(!n){mm.editing=false;return;}
-    var inp=document.createElement('input');
-    inp.className='mm-node-inp';
-    inp.value=n.text;inp.style.left=el.style.left;inp.style.top=el.style.top;
-    el.style.visibility='hidden';
-    getCanvas().appendChild(inp);
-    inp.focus();inp.select();
-    var done=false;
-    var commit=function(){
-      if(done)return;done=true;
-      var v=inp.value.trim()||n.text;
-      n.text=v;el.textContent=v;el.style.visibility='';
-      inp.remove();mm.editing=false;mmSave();
-    };
-    inp.addEventListener('blur',commit);
-    inp.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();commit();}});
-  }
+  var nodes  = cur.nodes;
+  var pos    = computeLayout(nodes);
+  var info   = computeDepths(nodes);
+  var depths = info.depths;
+  var bcols  = info.branchCol;
 
-  function mmUpdateNodePos(nodeId){
-    if(!mm.cur)return;
-    var nodes=mm.cur.nodes,n=nodes.find(function(x){return x.id===nodeId;});if(!n)return;
-    var el=document.getElementById('mm-node-'+nodeId);
-    if(el){el.style.left=sx(n.x)+'px';el.style.top=sy(n.y)+'px';}
-    function upLine(cid,pn,cn){
-      var ln=document.getElementById('mm-line-'+cid);if(!ln)return;
-      var x1=sx(pn.x),y1=sy(pn.y),x2=sx(cn.x),y2=sy(cn.y),mx=(x1+x2)/2;
-      ln.setAttribute('d','M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2);
-    }
-    if(n.parentId){var p=nodes.find(function(x){return x.id===n.parentId;});if(p)upLine(nodeId,p,n);}
-    nodes.filter(function(c){return c.parentId===nodeId;}).forEach(function(c){upLine(c.id,n,c);});
-  }
+  var xs = Object.keys(pos).map(function (k) { return pos[k].x; });
+  var ys = Object.keys(pos).map(function (k) { return pos[k].y; });
+  var w  = Math.max((xs.length ? Math.max.apply(null, xs) : 0) + PAD + NW, canvas.clientWidth);
+  var h  = Math.max((ys.length ? Math.max.apply(null, ys) : 0) + PAD, canvas.clientHeight);
 
-  // ── KEYBOARD ──
-  document.addEventListener('keydown',function(e){
-    if(!mm.cur||mm.editing)return;
-    if(e.key==='Tab'){
-      e.preventDefault();if(mm.sel)mmAddChild(mm.sel);
-    } else if(e.key==='Enter'){
-      if(!mm.sel)return;e.preventDefault();
-      var n=mm.cur.nodes.find(function(x){return x.id===mm.sel;});
-      if(n&&n.parentId)mmAddSibling(mm.sel);else if(n)mmAddChild(mm.sel);
-    } else if((e.key==='Delete'||e.key==='Backspace')&&mm.sel){
-      var n2=mm.cur.nodes.find(function(x){return x.id===mm.sel;});
-      if(n2&&n2.parentId){e.preventDefault();mmDelNode(mm.sel);}
-    }
+  stage.style.width  = w + 'px';
+  stage.style.height = h + 'px';
+  svg.setAttribute('width',  w);
+  svg.setAttribute('height', h);
+
+  Array.from(stage.querySelectorAll('.node')).forEach(function (el) { el.remove(); });
+  svg.innerHTML = '';
+
+  // SVG edges: bezier from right side of parent to left side of child
+  nodes.forEach(function (n) {
+    if (!n.parentId) return;
+    var pp = pos[n.parentId], cp = pos[n.id];
+    if (!pp || !cp) return;
+    var col = bcols[n.id] || COLS[0];
+    var x1  = pp.x + NW / 2, y1 = pp.y;
+    var x2  = cp.x - NW / 2, y2 = cp.y;
+    var mx  = (x1 + x2) / 2;
+    var p   = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', 'M' + x1 + ',' + y1 + ' C' + mx + ',' + y1 + ' ' + mx + ',' + y2 + ' ' + x2 + ',' + y2);
+    p.setAttribute('fill', 'none');
+    p.setAttribute('stroke', col);
+    p.setAttribute('stroke-width', '1.5');
+    p.setAttribute('opacity', '0.5');
+    svg.appendChild(p);
   });
 
-  // ── MOUSE — RAF-throttled ──
-  document.addEventListener('mousemove',function(e){
-    if(!mm.drag&&!mm.panDrag)return;
-    mm.pendingMouse={x:e.clientX,y:e.clientY};
-    if(mm.rafId)return;
-    mm.rafId=requestAnimationFrame(function(){
-      mm.rafId=null;var ev=mm.pendingMouse;mm.pendingMouse=null;if(!ev)return;
-      if(mm.drag&&mm.cur){
-        var n=mm.cur.nodes.find(function(x){return x.id===mm.drag.nid;});
-        if(n){n.x=mm.drag.ox+(ev.x-mm.drag.sx);n.y=mm.drag.oy+(ev.y-mm.drag.sy);mmUpdateNodePos(n.id);}
-      } else if(mm.panDrag){
-        mm.pan.x=mm.panDrag.ox+(ev.x-mm.panDrag.sx);
-        mm.pan.y=mm.panDrag.oy+(ev.y-mm.panDrag.sy);
-        mmSetPan();
-      }
-    });
-  },{passive:true});
-
-  document.addEventListener('mouseup',function(){
-    if(mm.drag){mmSave();mm.drag=null;}
-    mm.panDrag=null;
-  },{passive:true});
-
-  document.getElementById('mm-area').addEventListener('mousedown',function(e){
-    if(!e.target.classList.contains('mm-node')&&!e.target.classList.contains('mm-node-inp')){
-      mmSelectNode(null);mm.panDrag={sx:e.clientX,sy:e.clientY,ox:mm.pan.x,oy:mm.pan.y};
+  // Node divs
+  nodes.forEach(function (n) {
+    var p  = pos[n.id]; if (!p) return;
+    var d  = depths[n.id] || 0;
+    var el = document.createElement('div');
+    el.className   = 'node' + (d === 0 ? ' root-node' : '') + (n.id === sel ? ' sel' : '');
+    el.id          = 'n-' + n.id;
+    el.textContent = n.text;
+    el.style.left  = p.x + 'px';
+    el.style.top   = p.y + 'px';
+    if (d > 0) {
+      var col = bcols[n.id] || COLS[0];
+      el.style.borderColor = col;
+      el.style.color       = col;
     }
-  },{passive:true});
+    el.addEventListener('click',   function (e) { e.stopPropagation(); select(n.id); });
+    el.addEventListener('dblclick', function (e) { e.stopPropagation(); startEdit(n.id); });
+    stage.appendChild(el);
+  });
 
-  // ── ADD / DELETE NODES ──
-  function mmAddChild(parentId){
-    if(!mm.cur)return;
-    var parent=mm.cur.nodes.find(function(x){return x.id===parentId;});if(!parent)return;
-    var children=mm.cur.nodes.filter(function(x){return x.parentId===parentId;});
-    var newId=uid(),nx=parent.x+220,ny=children.length===0?parent.y:children[children.length-1].y+70;
-    mm.cur.nodes.push({id:newId,text:'Новый узел',x:nx,y:ny,parentId:parentId});
-    mmSave();mmRedraw();mmSelectNode(newId);
-    requestAnimationFrame(function(){var el=document.getElementById('mm-node-'+newId);if(el)mmEditNode(newId,el);});
+  updateBar();
+}
+
+// ── Selection ──────────────────────────────────────────────────────────────
+function select(id) {
+  sel = id;
+  Array.from(document.querySelectorAll('#stage .node')).forEach(function (el) {
+    el.classList.toggle('sel', el.id === 'n-' + id);
+  });
+  updateBar();
+}
+
+function updateBar() {
+  var n    = sel && cur ? cur.nodes.find(function (x) { return x.id === sel; }) : null;
+  var hasp = !!(n && n.parentId);
+  document.getElementById('sel-label').textContent    = n ? '«' + n.text + '»' : 'Выберите узел';
+  document.getElementById('btn-child').disabled = !n;
+  document.getElementById('btn-sib').disabled   = !hasp;
+  document.getElementById('btn-del').disabled   = !hasp;
+}
+
+// ── Inline editor ──────────────────────────────────────────────────────────
+function startEdit(id) {
+  var nodeId = id || sel;
+  if (!nodeId || !cur) return;
+  var n  = cur.nodes.find(function (x) { return x.id === nodeId; });
+  var el = document.getElementById('n-' + nodeId);
+  if (!n || !el) return;
+  var r  = el.getBoundingClientRect();
+  var ed = document.getElementById('editor');
+  editId             = nodeId;
+  ed.value           = n.text;
+  ed.style.left      = r.left + 'px';
+  ed.style.top       = r.top  + 'px';
+  ed.style.width     = Math.max(r.width, 100) + 'px';
+  ed.style.minHeight = r.height + 'px';
+  ed.style.display   = 'block';
+  el.style.visibility = 'hidden';
+  ed.focus();
+  ed.select();
+}
+
+function commitEdit() {
+  if (!editId || !cur) return;
+  var nodeId = editId;
+  editId = null;  // null first so blur re-entry is a no-op
+  var ed = document.getElementById('editor');
+  var n  = cur.nodes.find(function (x) { return x.id === nodeId; });
+  var v  = ed.value.trim();
+  if (n && v) n.text = v;
+  var el = document.getElementById('n-' + nodeId);
+  if (el) el.style.visibility = '';
+  ed.style.display = 'none';
+  saveState();
+  render();
+  select(nodeId);
+}
+
+function cancelEdit() {
+  if (!editId) return;
+  var nodeId = editId;
+  editId = null;
+  var el = document.getElementById('n-' + nodeId);
+  if (el) el.style.visibility = '';
+  document.getElementById('editor').style.display = 'none';
+}
+
+(function () {
+  var ed = document.getElementById('editor');
+  ed.addEventListener('blur',    function ()  { if (editId) commitEdit(); });
+  ed.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter')  { e.preventDefault(); commitEdit(); }
+    if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+  });
+})();
+
+// ── Node operations ────────────────────────────────────────────────────────
+function addChild() {
+  if (!cur || !sel) return;
+  var id = uid();
+  cur.nodes.push({ id: id, text: 'Узел', parentId: sel });
+  saveState(); render(); select(id);
+  requestAnimationFrame(function () { startEdit(id); });
+}
+
+function addSibling() {
+  if (!cur || !sel) return;
+  var n = cur.nodes.find(function (x) { return x.id === sel; });
+  if (!n || !n.parentId) return;
+  var id = uid();
+  cur.nodes.push({ id: id, text: 'Узел', parentId: n.parentId });
+  saveState(); render(); select(id);
+  requestAnimationFrame(function () { startEdit(id); });
+}
+
+function deleteNode() {
+  if (!cur || !sel) return;
+  var n = cur.nodes.find(function (x) { return x.id === sel; });
+  if (!n || !n.parentId) return;
+  function subtree(id) {
+    var r = [id];
+    cur.nodes.filter(function (c) { return c.parentId === id; })
+             .forEach(function (c) { r = r.concat(subtree(c.id)); });
+    return r;
   }
+  var del = subtree(sel);
+  cur.nodes = cur.nodes.filter(function (x) { return del.indexOf(x.id) === -1; });
+  sel = null;
+  saveState(); render();
+}
 
-  function mmAddSibling(nodeId){
-    if(!mm.cur)return;
-    var n=mm.cur.nodes.find(function(x){return x.id===nodeId;});if(!n||!n.parentId)return;
-    var newId=uid();
-    mm.cur.nodes.push({id:newId,text:'Новый узел',x:n.x,y:n.y+70,parentId:n.parentId});
-    mmSave();mmRedraw();mmSelectNode(newId);
-    requestAnimationFrame(function(){var el=document.getElementById('mm-node-'+newId);if(el)mmEditNode(newId,el);});
+window.addChild   = addChild;
+window.addSibling = addSibling;
+window.deleteNode = deleteNode;
+
+// ── Keyboard ───────────────────────────────────────────────────────────────
+document.addEventListener('keydown', function (e) {
+  if (!cur) return;
+  if (document.getElementById('editor').style.display !== 'none') return;
+  var n = sel ? cur.nodes.find(function (x) { return x.id === sel; }) : null;
+  switch (e.key) {
+    case 'Tab':
+      e.preventDefault();
+      if (sel) addChild();
+      break;
+    case 'Enter':
+      e.preventDefault();
+      if (sel) addSibling();
+      break;
+    case 'F2':
+      e.preventDefault();
+      if (sel) startEdit(sel);
+      break;
+    case 'Delete':
+    case 'Backspace':
+      if (n && n.parentId) { e.preventDefault(); deleteNode(); }
+      break;
   }
+});
 
-  function mmDelNode(nodeId){
-    if(!mm.cur)return;
-    function ids(id){var r=[id];mm.cur.nodes.filter(function(c){return c.parentId===id;}).forEach(function(c){r=r.concat(ids(c.id));});return r;}
-    var del=ids(nodeId);
-    mm.cur.nodes=mm.cur.nodes.filter(function(n){return del.indexOf(n.id)===-1;});
-    mm.sel=null;mmSave();mmRedraw();
-  }
+// Deselect on background click
+document.getElementById('canvas').addEventListener('click', function (e) {
+  var t = e.target;
+  if (t === this || t.id === 'stage' || t.id === 'edges' || t.tagName === 'path') select(null);
+});
 
-  // ── SHARE ──
-  window.mmShare=function(){
-    if(!mm.cur)return;
-    mmSave();
-    var map=mm.state.maps.find(function(x){return x.id===mm.cur.id;})||mm.cur;
-    var bid=uid()+uid(),key='mindmap_'+map.id;
-    fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:key,bid:bid,data:map})})
-      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);prompt('Ссылка для клиента (скопируй):',window.location.origin+'/mindmap.html?id='+map.id+'&bid='+bid);})
-      .catch(function(err){alert('Ошибка при сохранении: '+err.message);});
-  };
+window.addEventListener('resize', function () { if (cur) render(); }, { passive: true });
 
-  // ── BOOT ──
-  var params=new URLSearchParams(window.location.search);
-  var mapId=params.get('id');
-  if(mapId){
-    mmInit(mapId);
+// ── Back / Share ───────────────────────────────────────────────────────────
+window.goBack = function () {
+  saveState();
+  window.close();
+  requestAnimationFrame(function () { window.location.href = 'index.html'; });
+};
+
+window.doShare = function () {
+  if (!cur) return;
+  saveState();
+  var map = state.maps.find(function (x) { return x.id === cur.id; }) || cur;
+  var bid = uid() + uid();
+  fetch('/api/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: 'mindmap_' + map.id, bid: bid, data: map })
+  })
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      prompt('Ссылка для клиента:', window.location.origin + '/mindmap.html?id=' + map.id + '&bid=' + bid);
+    })
+    .catch(function (err) { alert('Ошибка сохранения: ' + err.message); });
+};
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+var mapId = new URLSearchParams(window.location.search).get('id');
+if (!mapId) {
+  document.getElementById('errscreen').classList.add('show');
+} else {
+  loadState();
+  var map = state.maps.find(function (m) { return m.id === mapId; });
+  if (!map) {
+    document.getElementById('err-msg').textContent = 'Карта не найдена (id: ' + mapId + ')';
+    document.getElementById('errscreen').classList.add('show');
   } else {
-    var err=document.getElementById('mm-error');
-    if(err)err.classList.add('show');
+    cur = JSON.parse(JSON.stringify(map));
+    document.getElementById('map-name').textContent = cur.name;
+    document.title = cur.name + ' — Минд мап';
+    render();
+    var root = cur.nodes.find(function (n) { return !n.parentId; });
+    if (root) select(root.id);
   }
+}
+
 })();
 </script>
 </body>
