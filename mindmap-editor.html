@@ -261,30 +261,30 @@ if (!mapId) {
   document.getElementById('errscreen').classList.add('show');
 } else {
   loadState();
-  const map = state.maps.find(m => m.id === mapId);
+  let map = state.maps.find(m => m.id === mapId);
   if (!map) {
-    document.getElementById('err-msg').textContent = 'Карта не найдена (id: ' + mapId + ')';
-    document.getElementById('errscreen').classList.add('show');
-  } else {
-    cur = JSON.parse(JSON.stringify(map));
-    cur.nodes = cur.nodes || [];
-    document.getElementById('map-name').textContent = cur.name;
-    document.title = cur.name + ' — Минд мап';
+    map = {id: mapId, name: 'Новая карта', created: new Date().toISOString(), nodes: []};
+    state.maps.unshift(map);
+  }
 
-    if (!cur.nodes.length) {
-      cur.nodes.push({id: uid(), text: cur.name, parentId: null});
-      saveState();
-    }
+  cur = JSON.parse(JSON.stringify(map));
+  cur.nodes = cur.nodes || [];
+  document.getElementById('map-name').textContent = cur.name;
+  document.title = cur.name + ' — Минд мап';
 
-    render();
-    const root = cur.nodes.find(n => !n.parentId);
-    if (root) {
-      select(root.id);
-      requestAnimationFrame(() => {
-        const el = document.getElementById('n-' + root.id);
-        if (el) el.scrollIntoView({block: 'center', inline: 'center'});
-      });
-    }
+  if (!cur.nodes.length) {
+    cur.nodes.push({id: 'root', text: 'Главная идея', parentId: null});
+    saveState();
+  }
+
+  render();
+  const root = cur.nodes.find(n => !n.parentId);
+  if (root) {
+    select(root.id);
+    requestAnimationFrame(() => {
+      const el = document.getElementById('n-' + root.id);
+      if (el) el.scrollIntoView({block: 'center', inline: 'center'});
+    });
   }
 }
 </script>
