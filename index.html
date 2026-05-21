@@ -3228,12 +3228,13 @@ function vkcRender() {}
       nodes:[{id:nodeId,text:name,x:0,y:0,parentId:null}]});
     mmSave();
     mmRenderList();
-    window.open('mindmap-editor.html?id='+encodeURIComponent(mapId),'_blank');
+    console.log('[mmNew] открываем редактор, mapId='+mapId);
+    window.location.href='mindmap-editor.html?id='+encodeURIComponent(mapId);
   };
 
-  // Open editor in new tab
   window.mmOpen=function(id){
-    window.open('mindmap-editor.html?id='+encodeURIComponent(id),'_blank');
+    console.log('[mmOpen] открываем редактор, id='+id);
+    window.location.href='mindmap-editor.html?id='+encodeURIComponent(id);
   };
 
   window.mmDeleteMap=function(id){
