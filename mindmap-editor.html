@@ -101,8 +101,16 @@ let state = {maps:[]}, cur = null, sel = null;
 const uid = () => Math.random().toString(36).slice(2, 9);
 
 function loadState() {
-  try { state = JSON.parse(localStorage.getItem(LSKEY)) || {maps:[]}; }
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LSKEY));
+    state = (parsed && typeof parsed === 'object' && Array.isArray(parsed.maps)) ? parsed : {maps:[]};
+  }
   catch(e) { state = {maps:[]}; }
+}
+
+function showErr(msg) {
+  document.getElementById('err-msg').textContent = msg;
+  document.getElementById('errscreen').classList.add('show');
 }
 
 function saveState() {
@@ -256,36 +264,43 @@ window.doShare = () => {
 };
 
 // Boot
-const mapId = new URLSearchParams(location.search).get('id');
-if (!mapId) {
-  document.getElementById('errscreen').classList.add('show');
-} else {
-  loadState();
-  let map = state.maps.find(m => m.id === mapId);
-  if (!map) {
-    map = {id: mapId, name: 'Новая карта', created: new Date().toISOString(), nodes: []};
-    state.maps.unshift(map);
-  }
+try {
+  const mapId = new URLSearchParams(location.search).get('id');
+  if (!mapId) {
+    document.getElementById('errscreen').classList.add('show');
+  } else {
+    loadState();
+    let map = state.maps.find(m => m.id === mapId);
+    if (!map) {
+      map = {id: mapId, name: 'Новая карта', created: new Date().toISOString(), nodes: []};
+      state.maps.unshift(map);
+    }
 
-  cur = JSON.parse(JSON.stringify(map));
-  cur.nodes = cur.nodes || [];
-  document.getElementById('map-name').textContent = cur.name;
-  document.title = cur.name + ' — Минд мап';
-
-  if (!cur.nodes.length) {
-    cur.nodes.push({id: 'root', text: 'Главная идея', parentId: null});
+    cur = JSON.parse(JSON.stringify(map));
+    cur.nodes = Array.isArray(cur.nodes) ? cur.nodes : [];
+    if (!cur.nodes.length) {
+      cur.nodes.push({id: 'root', text: 'Главная идея', parentId: null});
+    } else if (!cur.nodes.some(n => !n.parentId)) {
+      cur.nodes[0].parentId = null;
+    }
     saveState();
-  }
 
-  render();
-  const root = cur.nodes.find(n => !n.parentId);
-  if (root) {
-    select(root.id);
-    requestAnimationFrame(() => {
-      const el = document.getElementById('n-' + root.id);
-      if (el) el.scrollIntoView({block: 'center', inline: 'center'});
-    });
+    document.getElementById('map-name').textContent = cur.name || 'Минд мап';
+    document.title = (cur.name || 'Минд мап') + ' — Минд мап';
+
+    render();
+    const root = cur.nodes.find(n => !n.parentId);
+    if (root) {
+      select(root.id);
+      requestAnimationFrame(() => {
+        const el = document.getElementById('n-' + root.id);
+        if (el) el.scrollIntoView({block: 'center', inline: 'center'});
+      });
+    }
   }
+} catch (e) {
+  showErr('Ошибка запуска: ' + e.message);
+  console.error(e);
 }
 </script>
 </body>

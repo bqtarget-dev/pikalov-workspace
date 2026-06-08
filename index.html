@@ -288,9 +288,10 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .mc2-add-card{align-items:center;justify-content:center;cursor:pointer;border-style:dashed}
 .mc2-add-card:hover{border-color:var(--accent)}
 .mc2-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.mc2-info{display:flex;align-items:center;gap:6px;flex:1;min-width:0;overflow:hidden}
-.mc2-name{font-size:14px;font-weight:500;white-space:nowrap}
+.mc2-info{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0;overflow:hidden}
+.mc2-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .mc2-role{font-size:10px;color:var(--text3);white-space:nowrap}
+.mc2-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .mc2-status-btn{font-size:11px;padding:4px 10px;border-radius:14px;border:none;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;flex-shrink:0;transition:opacity .15s}
 .mc2-status-btn:hover{opacity:.8}
 .mc2-online{background:rgba(62,207,142,.15);color:var(--green)}
@@ -1856,12 +1857,14 @@ function _renderTeam() {
 
     return '<div class="member-card2">' +
       '<div class="mc2-header">' +
-        '<div class="mc2-info">' + editBtn + delBtn +
+        '<div class="mc2-info">' +
           '<span class="mc2-name">' + esc(m.name) + '</span>' +
           '<span class="mc2-role">' + esc(m.role) + '</span>' +
         '</div>' +
-        '<button class="mc2-status-btn ' + (online ? 'mc2-online' : 'mc2-away') + '" onclick="toggleMemberStatus(\'' + m.slug + '\')">' +
-          (online ? '🟢 На месте' : '🔴 Отошёл') + '</button>' +
+        '<div class="mc2-actions">' + editBtn + delBtn +
+          '<button class="mc2-status-btn ' + (online ? 'mc2-online' : 'mc2-away') + '" onclick="toggleMemberStatus(\'' + m.slug + '\')">' +
+            (online ? '🟢 На месте' : '🔴 Отошёл') + '</button>' +
+        '</div>' +
       '</div>' +
       '<div class="mc2-tasks" id="mc2-tasks-' + m.slug + '">' + taskRows + '</div>' +
       '<div class="mc2-quick">' +
