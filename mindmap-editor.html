@@ -67,6 +67,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .node.root{background:linear-gradient(135deg,#7f6ef5,#6553d6);border-color:transparent;color:#fff;font-weight:600;font-size:14.5px;box-shadow:0 4px 18px rgba(127,110,245,.4)}
 .node.root.sel{box-shadow:0 0 0 2px rgba(255,255,255,.5), 0 6px 20px rgba(127,110,245,.5)}
 .node input{background:transparent;border:none;outline:none;color:inherit;font:inherit;text-align:center;width:100%;display:block;min-width:50px}
+.node.msel{box-shadow:0 0 0 2px rgba(127,110,245,.6), 0 4px 14px rgba(127,110,245,.4)}
+#marquee{position:fixed;z-index:5;display:none;border:1.5px solid var(--accent);background:rgba(127,110,245,.12);border-radius:4px;pointer-events:none}
 
 /* hint bar */
 #hint{position:fixed;bottom:0;left:0;right:0;height:36px;z-index:10;display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;font-size:11px;color:var(--text3);background:var(--bg2);border-top:.5px solid var(--border);padding:0 12px}
@@ -95,6 +97,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 
 <div id="canvas"></div>
 
+<div id="marquee"></div>
+
 <div id="hint">
   <span><b>Tab</b> — дочерний</span>
   <span><b>Enter</b> — соседний</span>
@@ -112,6 +116,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 const LSKEY = 'pm_mindmap_v1';
 const COLORS = ['#7f6ef5','#4A9EFF','#FF8C42','#50C878'];
 let state = {maps:[]}, cur = null, sel = null;
+let multiSel = new Set();
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
@@ -155,7 +160,7 @@ function buildBranch(nodeId) {
 
   const box = document.createElement('div');
   const isRoot = !n.parentId;
-  box.className = 'node' + (isRoot ? ' root' : '') + (nodeId === sel ? ' sel' : '');
+  box.className = 'node' + (isRoot ? ' root' : '') + (nodeId === sel ? ' sel' : '') + (multiSel.has(nodeId) ? ' msel' : '');
   box.id = 'n-' + nodeId;
   box.textContent = n.text;
   if (!isRoot) {
@@ -195,8 +200,8 @@ function render() {
 }
 
 function select(id) {
-  const prev = document.querySelector('.node.sel');
-  if (prev) prev.classList.remove('sel');
+  document.querySelectorAll('.node.sel, .node.msel').forEach(el => { el.classList.remove('sel'); el.classList.remove('msel'); });
+  multiSel = new Set();
   sel = id;
   if (id) {
     const el = document.getElementById('n-' + id);
@@ -206,6 +211,13 @@ function select(id) {
 }
 
 function updateBar() {
+  if (multiSel.size) {
+    document.getElementById('sel-label').textContent = 'Выделено: ' + multiSel.size;
+    document.getElementById('btn-child').disabled = true;
+    document.getElementById('btn-sib').disabled   = true;
+    document.getElementById('btn-del').disabled   = false;
+    return;
+  }
   const n = sel ? cur.nodes.find(x => x.id === sel) : null;
   const hasp = !!(n && n.parentId);
   document.getElementById('sel-label').textContent = n ? '«' + n.text + '»' : 'Выберите узел';
@@ -264,29 +276,79 @@ function addAfter(id) {
   if (n && n.parentId) addSibling(); else addChild();
 }
 
-function delNode() {
-  if (!cur || !sel) return;
-  const n = cur.nodes.find(x => x.id === sel);
-  if (!n || !n.parentId) return;
+// Delete the current selection (marquee multi-selection if any, otherwise the single node).
+// Root is never deleted.
+function delSelected() {
+  if (!cur) return;
+  const ids = multiSel.size ? [...multiSel] : (sel ? [sel] : []);
+  if (!ids.length) return;
   const subtree = id => [id, ...cur.nodes.filter(c => c.parentId === id).flatMap(c => subtree(c.id))];
-  const del = new Set(subtree(sel));
+  const del = new Set();
+  ids.forEach(id => {
+    const n = cur.nodes.find(x => x.id === id);
+    if (n && n.parentId) subtree(id).forEach(d => del.add(d));
+  });
+  if (!del.size) return;            // only the root was selected
   cur.nodes = cur.nodes.filter(x => !del.has(x.id));
-  sel = null; saveState(); render();
+  sel = null; multiSel = new Set();
+  saveState(); render();
 }
+function delNode() { delSelected(); }   // action-bar button
 
-document.getElementById('canvas').onclick = e => {
-  if (e.target === e.currentTarget) { sel = null; render(); }
-};
+// ── Marquee (drag-to-select) ──────────────────────────────────────────
+(function () {
+  const canvasEl = document.getElementById('canvas');
+  const box = document.getElementById('marquee');
+  let mq = null;
+
+  function setBox(x, y, w, h) { box.style.left = x + 'px'; box.style.top = y + 'px'; box.style.width = w + 'px'; box.style.height = h + 'px'; }
+
+  function selectInRect(x, y, w, h) {
+    multiSel = new Set();
+    sel = null;
+    document.querySelectorAll('.node').forEach(el => {
+      if (!el.id || el.id.slice(0, 2) !== 'n-') return;
+      const r = el.getBoundingClientRect();
+      const intersects = !(r.right < x || r.left > x + w || r.bottom < y || r.top > y + h);
+      if (intersects) multiSel.add(el.id.slice(2));
+    });
+    document.querySelectorAll('.node.sel, .node.msel').forEach(el => { el.classList.remove('sel'); el.classList.remove('msel'); });
+    multiSel.forEach(id => { const el = document.getElementById('n-' + id); if (el) el.classList.add('msel'); });
+    updateBar();
+  }
+
+  canvasEl.addEventListener('mousedown', e => {
+    if (e.target !== canvasEl) return;            // only start on empty space
+    mq = {x0: e.clientX, y0: e.clientY};
+    box.style.display = 'block';
+    setBox(e.clientX, e.clientY, 0, 0);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!mq) return;
+    setBox(Math.min(e.clientX, mq.x0), Math.min(e.clientY, mq.y0), Math.abs(e.clientX - mq.x0), Math.abs(e.clientY - mq.y0));
+  });
+  document.addEventListener('mouseup', e => {
+    if (!mq) return;
+    box.style.display = 'none';
+    const moved = Math.abs(e.clientX - mq.x0) > 4 || Math.abs(e.clientY - mq.y0) > 4;
+    const x = Math.min(e.clientX, mq.x0), y = Math.min(e.clientY, mq.y0), w = Math.abs(e.clientX - mq.x0), h = Math.abs(e.clientY - mq.y0);
+    mq = null;
+    if (moved) selectInRect(x, y, w, h);
+    else { multiSel = new Set(); sel = null; render(); }   // plain click on empty space = deselect
+  });
+})();
 
 // Keyboard shortcuts (ignored while typing in an input)
 document.addEventListener('keydown', e => {
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-  if (!cur || !sel) return;
-  if (e.key === 'Tab')                               { e.preventDefault(); addChild(); }
-  else if (e.key === 'Enter')                        { e.preventDefault(); addAfter(sel); }
-  else if (e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); delNode(); }
-  else if (e.key === 'F2')                           { e.preventDefault(); startEdit(sel); }
+  if (!cur) return;
+  if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); delSelected(); return; }
+  if (!sel) return;
+  if (e.key === 'Tab')        { e.preventDefault(); addChild(); }
+  else if (e.key === 'Enter') { e.preventDefault(); addAfter(sel); }
+  else if (e.key === 'F2')    { e.preventDefault(); startEdit(sel); }
 });
 
 window.addChild   = addChild;
