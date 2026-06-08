@@ -4,70 +4,77 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Минд мап</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden;background:#0d0d10;color:#e0e0ec;font-family:system-ui,-apple-system,sans-serif;font-size:14px}
+:root{
+  --bg:#0a0a0c;--bg2:#111116;--bg3:#18181f;--bg4:#1f1f29;
+  --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);
+  --accent:#7f6ef5;--accent2:#a99ef8;
+  --text:rgba(255,255,255,.92);--text2:rgba(255,255,255,.45);--text3:rgba(255,255,255,.25);
+  --c0:#7f6ef5;--c1:#4A9EFF;--c2:#FF8C42;--c3:#50C878;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px}
 
 /* top bar */
-#topbar{position:fixed;top:0;left:0;right:0;height:48px;z-index:10;display:flex;align-items:center;gap:10px;padding:0 16px;background:#0a0a0c;border-bottom:1px solid rgba(255,255,255,.07)}
-#map-name{flex:1;text-align:center;font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#topbar{position:fixed;top:0;left:0;right:0;height:54px;z-index:10;display:flex;align-items:center;gap:10px;padding:0 18px;background:rgba(10,10,12,.92);backdrop-filter:blur(10px);border-bottom:.5px solid var(--border)}
+#map-name{flex:1;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* action bar */
-#actionbar{position:fixed;top:48px;left:0;right:0;height:44px;z-index:10;display:flex;align-items:center;gap:8px;padding:0 16px;background:#111116;border-bottom:1px solid rgba(255,255,255,.07)}
-#sel-label{flex:1;font-size:12px;color:rgba(255,255,255,.38);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#actionbar{position:fixed;top:54px;left:0;right:0;height:46px;z-index:10;display:flex;align-items:center;gap:8px;padding:0 18px;background:var(--bg2);border-bottom:.5px solid var(--border)}
+#sel-label{flex:1;font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* buttons */
-.btn{font-size:12px;padding:5px 12px;border-radius:7px;border:1px solid rgba(255,255,255,.12);cursor:pointer;background:transparent;color:rgba(255,255,255,.5);white-space:nowrap;font-family:inherit;transition:.12s}
-.btn:disabled{opacity:.2;cursor:default;pointer-events:none}
-.btn:not(:disabled):hover{color:#fff}
-.btn-share{color:#a99ef8;background:rgba(127,110,245,.08);border-color:rgba(127,110,245,.28)}
-.btn-share:not(:disabled):hover{background:rgba(127,110,245,.18)}
-.btn-child{color:#a99ef8;background:rgba(127,110,245,.07);border-color:rgba(127,110,245,.25)}
+.btn{font-size:12px;padding:7px 14px;border-radius:8px;border:.5px solid var(--border2);cursor:pointer;background:transparent;color:var(--text2);white-space:nowrap;font-family:inherit;font-weight:500;transition:.13s}
+.btn:disabled{opacity:.25;cursor:default;pointer-events:none}
+.btn:not(:disabled):hover{color:#fff;border-color:var(--text2)}
+.btn-share{color:var(--accent2);background:rgba(127,110,245,.1);border-color:rgba(127,110,245,.3)}
+.btn-share:not(:disabled):hover{background:rgba(127,110,245,.2);color:#fff}
+.btn-child{color:var(--accent2);background:rgba(127,110,245,.08);border-color:rgba(127,110,245,.28)}
 .btn-child:not(:disabled):hover{background:rgba(127,110,245,.18)}
-.btn-sib{color:#74b8ff;background:rgba(74,158,255,.07);border-color:rgba(74,158,255,.25)}
+.btn-sib{color:#74b8ff;background:rgba(74,158,255,.08);border-color:rgba(74,158,255,.28)}
 .btn-sib:not(:disabled):hover{background:rgba(74,158,255,.18)}
-.btn-del{color:#f66;border-color:rgba(255,80,80,.22)}
-.btn-del:not(:disabled):hover{background:rgba(255,80,80,.08)}
+.btn-del{color:#f77;border-color:rgba(255,90,90,.26)}
+.btn-del:not(:disabled):hover{background:rgba(255,90,90,.1)}
 
 /* canvas */
-#canvas{position:fixed;top:92px;left:0;right:0;bottom:0;overflow:auto;padding:40px}
-#canvas::-webkit-scrollbar{width:5px;height:5px}
-#canvas::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+#canvas{position:fixed;top:100px;left:0;right:0;bottom:36px;overflow:auto;padding:60px;
+  background-image:radial-gradient(circle, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size:26px 26px}
+#canvas::-webkit-scrollbar{width:7px;height:7px}
+#canvas::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px}
 
-/* --- CSS flexbox tree --- */
-
-/* A branch = [node-box] [h-line + children-column] */
+/* tree (flexbox) */
 .branch{display:flex;align-items:center}
+.h-line{width:30px;height:1.5px;background:var(--border2);flex-shrink:0}
+.children{display:flex;flex-direction:column;gap:14px;padding:10px 0;border-left:1.5px solid var(--border2)}
+.child-entry{display:flex;align-items:center;padding-left:30px;position:relative}
+.child-entry::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:30px;height:1.5px;background:var(--border2)}
 
-/* Horizontal connector from node to vertical line */
-.h-line{width:24px;height:1.5px;background:rgba(255,255,255,.14);flex-shrink:0}
-
-/* Vertical column of children, border-left = vertical line */
-.children{display:flex;flex-direction:column;gap:10px;padding:8px 0;border-left:1.5px solid rgba(255,255,255,.14)}
-
-/* Each child entry: horizontal connector via ::before + recursive branch */
-.child-entry{display:flex;align-items:center;padding-left:24px;position:relative}
-.child-entry::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:24px;height:1.5px;background:rgba(255,255,255,.14)}
-
-/* Node box */
+/* node box */
 .node{
-  padding:8px 14px;border-radius:9px;
-  border:1.5px solid rgba(255,255,255,.13);
-  background:#1c1c26;
+  padding:10px 18px;border-radius:12px;
+  border:1.5px solid var(--border2);
+  background:var(--bg3);color:var(--text);
   cursor:pointer;user-select:none;
-  font-size:13px;line-height:1.4;
-  text-align:center;word-break:break-word;max-width:160px;
-  transition:.1s;
+  font-size:13px;line-height:1.4;font-weight:500;
+  text-align:center;word-break:break-word;max-width:200px;
+  box-shadow:0 3px 12px rgba(0,0,0,.3);
+  transition:transform .1s, box-shadow .13s, border-color .13s;
 }
-.node:hover{border-color:rgba(255,255,255,.28)}
-.node.sel{border-color:#7f6ef5;box-shadow:0 0 0 2px rgba(127,110,245,.3)}
-.node.root{background:#7f6ef5;border-color:#7f6ef5;color:#fff;font-weight:600}
-.node.root.sel{box-shadow:0 0 0 2px rgba(255,255,255,.4)}
-/* inline edit input inherits node styles */
-.node input{background:transparent;border:none;outline:none;color:inherit;font:inherit;text-align:center;width:100%;display:block;min-width:40px}
+.node:hover{transform:translateY(-1px)}
+.node.sel{box-shadow:0 0 0 2px rgba(127,110,245,.45), 0 6px 18px rgba(127,110,245,.3)}
+.node.root{background:linear-gradient(135deg,#7f6ef5,#6553d6);border-color:transparent;color:#fff;font-weight:600;font-size:14.5px;box-shadow:0 4px 18px rgba(127,110,245,.4)}
+.node.root.sel{box-shadow:0 0 0 2px rgba(255,255,255,.5), 0 6px 20px rgba(127,110,245,.5)}
+.node input{background:transparent;border:none;outline:none;color:inherit;font:inherit;text-align:center;width:100%;display:block;min-width:50px}
+
+/* hint bar */
+#hint{position:fixed;bottom:0;left:0;right:0;height:36px;z-index:10;display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;font-size:11px;color:var(--text3);background:var(--bg2);border-top:.5px solid var(--border);padding:0 12px}
+#hint b{color:var(--text2);font-weight:600}
+#hint span{white-space:nowrap}
 
 /* error screen */
-#errscreen{display:none;position:fixed;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#0d0d10;color:rgba(255,255,255,.4)}
+#errscreen{display:none;position:fixed;inset:0;z-index:20;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--bg);color:var(--text2);text-align:center;padding:24px}
 #errscreen.show{display:flex}
 </style>
 </head>
@@ -76,41 +83,43 @@ html,body{height:100%;overflow:hidden;background:#0d0d10;color:#e0e0ec;font-fami
 <div id="topbar">
   <button class="btn" onclick="goBack()">← Назад</button>
   <span id="map-name"></span>
-  <button class="btn btn-share" onclick="doShare()">Поделиться</button>
+  <button class="btn btn-share" onclick="doShare()">🔗 Поделиться</button>
 </div>
 
 <div id="actionbar">
   <span id="sel-label">Выберите узел</span>
-  <button class="btn btn-child" id="btn-child" onclick="addChild()"    disabled>+ Дочерний</button>
-  <button class="btn btn-sib"   id="btn-sib"   onclick="addSibling()"  disabled>+ Соседний</button>
-  <button class="btn btn-del"   id="btn-del"   onclick="delNode()"     disabled>− Удалить</button>
+  <button class="btn btn-child" id="btn-child" onclick="addChild()"   disabled>+ Дочерний</button>
+  <button class="btn btn-sib"   id="btn-sib"   onclick="addSibling()" disabled>+ Соседний</button>
+  <button class="btn btn-del"   id="btn-del"   onclick="delNode()"    disabled>− Удалить</button>
 </div>
 
 <div id="canvas"></div>
 
+<div id="hint">
+  <span><b>Tab</b> — дочерний</span>
+  <span><b>Enter</b> — соседний</span>
+  <span><b>2× клик</b> / <b>F2</b> — переименовать</span>
+  <span><b>Delete</b> — удалить</span>
+</div>
+
 <div id="errscreen">
   <span id="err-msg">Карта не найдена</span>
-  <button class="btn" style="font-size:13px;padding:8px 18px" onclick="location.href='index.html'">← К списку</button>
+  <button class="btn" style="font-size:13px;padding:9px 20px" onclick="location.href='index.html'">← К списку</button>
 </div>
 
 <script>
 'use strict';
 const LSKEY = 'pm_mindmap_v1';
+const COLORS = ['#7f6ef5','#4A9EFF','#FF8C42','#50C878'];
 let state = {maps:[]}, cur = null, sel = null;
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
 function loadState() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(LSKEY));
-    state = (parsed && typeof parsed === 'object' && Array.isArray(parsed.maps)) ? parsed : {maps:[]};
-  }
-  catch(e) { state = {maps:[]}; }
-}
-
-function showErr(msg) {
-  document.getElementById('err-msg').textContent = msg;
-  document.getElementById('errscreen').classList.add('show');
+    const p = JSON.parse(localStorage.getItem(LSKEY));
+    state = (p && Array.isArray(p.maps)) ? p : {maps:[]};
+  } catch(e) { state = {maps:[]}; }
 }
 
 function saveState() {
@@ -119,6 +128,20 @@ function saveState() {
     if (m) m.nodes = cur.nodes;
   }
   try { localStorage.setItem(LSKEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function showErr(msg) {
+  const s = document.getElementById('errscreen');
+  if (!s) return;
+  const m = document.getElementById('err-msg');
+  if (m) m.textContent = msg;
+  s.classList.add('show');
+}
+
+function depthOf(nodeId) {
+  let d = 0, n = cur.nodes.find(x => x.id === nodeId);
+  while (n && n.parentId) { d++; const pid = n.parentId; n = cur.nodes.find(x => x.id === pid); }
+  return d;
 }
 
 // Build DOM subtree starting from nodeId
@@ -131,9 +154,15 @@ function buildBranch(nodeId) {
   branch.className = 'branch';
 
   const box = document.createElement('div');
-  box.className = 'node' + (!n.parentId ? ' root' : '') + (nodeId === sel ? ' sel' : '');
+  const isRoot = !n.parentId;
+  box.className = 'node' + (isRoot ? ' root' : '') + (nodeId === sel ? ' sel' : '');
   box.id = 'n-' + nodeId;
   box.textContent = n.text;
+  if (!isRoot) {
+    const color = COLORS[Math.min(depthOf(nodeId), COLORS.length - 1)];
+    box.style.borderColor = color;
+    box.style.color = color;
+  }
   box.onclick = e => { e.stopPropagation(); select(nodeId); };
   box.ondblclick = e => { e.stopPropagation(); startEdit(nodeId); };
   branch.appendChild(box);
@@ -153,7 +182,6 @@ function buildBranch(nodeId) {
     });
     branch.appendChild(col);
   }
-
   return branch;
 }
 
@@ -206,8 +234,9 @@ function startEdit(id) {
   }
   inp.onblur = commit;
   inp.onkeydown = e => {
-    if (e.key === 'Enter')  { e.preventDefault(); inp.blur(); }
-    if (e.key === 'Escape') { committed = true; render(); select(id); }
+    if (e.key === 'Enter')      { e.preventDefault(); commit(); addAfter(id); }
+    else if (e.key === 'Tab')   { e.preventDefault(); commit(); addChild(); }
+    else if (e.key === 'Escape'){ committed = true; render(); select(id); }
   };
 }
 
@@ -229,6 +258,12 @@ function addSibling() {
   requestAnimationFrame(() => startEdit(id));
 }
 
+// Enter behaviour: sibling if the node has a parent, otherwise a child (root case)
+function addAfter(id) {
+  const n = cur.nodes.find(x => x.id === id);
+  if (n && n.parentId) addSibling(); else addChild();
+}
+
 function delNode() {
   if (!cur || !sel) return;
   const n = cur.nodes.find(x => x.id === sel);
@@ -243,31 +278,50 @@ document.getElementById('canvas').onclick = e => {
   if (e.target === e.currentTarget) { sel = null; render(); }
 };
 
+// Keyboard shortcuts (ignored while typing in an input)
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement && document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if (!cur || !sel) return;
+  if (e.key === 'Tab')                               { e.preventDefault(); addChild(); }
+  else if (e.key === 'Enter')                        { e.preventDefault(); addAfter(sel); }
+  else if (e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); delNode(); }
+  else if (e.key === 'F2')                           { e.preventDefault(); startEdit(sel); }
+});
+
 window.addChild   = addChild;
 window.addSibling = addSibling;
 window.delNode    = delNode;
 
-window.goBack = () => { saveState(); window.close(); location.href = 'index.html'; };
+window.goBack = () => { saveState(); location.href = 'index.html'; };
 
 window.doShare = () => {
   if (!cur) return;
   saveState();
   const map = state.maps.find(x => x.id === cur.id) || cur;
-  const bid = uid() + uid();
+  // Reuse the shared bin (same one the media plans use). First share creates it.
+  const savedBid = localStorage.getItem('jsonbin_save_id') || undefined;
   fetch('/api/save', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({key: 'mindmap_' + map.id, bid, data: map})
+    body: JSON.stringify({key: 'mindmap_' + map.id, data: map, bid: savedBid})
   })
-  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); prompt('Ссылка:', location.origin + '/mindmap.html?id=' + map.id + '&bid=' + bid); })
-  .catch(err => alert('Ошибка: ' + err.message));
+  .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  .then(json => {
+    const binId = json.bin_id || savedBid;
+    if (!binId) throw new Error('сервер не вернул bin_id');
+    if (json.bin_id) localStorage.setItem('jsonbin_save_id', json.bin_id);
+    const link = location.origin + '/mindmap.html?id=' + encodeURIComponent(map.id) + '&bid=' + encodeURIComponent(binId);
+    prompt('Ссылка для клиента (скопируй):', link);
+  })
+  .catch(err => alert('Ошибка при сохранении: ' + err.message));
 };
 
 // Boot
 try {
   const mapId = new URLSearchParams(location.search).get('id');
   if (!mapId) {
-    document.getElementById('errscreen').classList.add('show');
+    showErr('Не передан id карты');
   } else {
     loadState();
     let map = state.maps.find(m => m.id === mapId);
@@ -278,15 +332,15 @@ try {
 
     cur = JSON.parse(JSON.stringify(map));
     cur.nodes = Array.isArray(cur.nodes) ? cur.nodes : [];
+    document.getElementById('map-name').textContent = cur.name || 'Минд мап';
+    document.title = (cur.name || 'Минд мап') + ' — Минд мап';
+
     if (!cur.nodes.length) {
       cur.nodes.push({id: 'root', text: 'Главная идея', parentId: null});
     } else if (!cur.nodes.some(n => !n.parentId)) {
       cur.nodes[0].parentId = null;
     }
     saveState();
-
-    document.getElementById('map-name').textContent = cur.name || 'Минд мап';
-    document.title = (cur.name || 'Минд мап') + ' — Минд мап';
 
     render();
     const root = cur.nodes.find(n => !n.parentId);
@@ -299,8 +353,8 @@ try {
     }
   }
 } catch (e) {
-  showErr('Ошибка запуска: ' + e.message);
-  console.error(e);
+  showErr('Ошибка запуска: ' + (e && e.message ? e.message : e));
+  console.error('[mindmap-editor boot]', e);
 }
 </script>
 </body>

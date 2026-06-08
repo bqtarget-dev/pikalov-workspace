@@ -4,29 +4,51 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Минд мап</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#0a0a0c;--bg2:#111116;--bg3:#18181f;--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);--accent:#7f6ef5;--text:rgba(255,255,255,.92);--text2:rgba(255,255,255,.45);--text3:rgba(255,255,255,.22)}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;display:flex;flex-direction:column}
-.header{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:.5px solid var(--border);background:var(--bg);flex-shrink:0}
+:root{
+  --bg:#0a0a0c;--bg2:#111116;--bg3:#18181f;
+  --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);
+  --accent:#7f6ef5;--text:rgba(255,255,255,.92);--text2:rgba(255,255,255,.45);--text3:rgba(255,255,255,.25);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px}
+body{display:flex;flex-direction:column;min-height:100vh}
+.header{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:.5px solid var(--border);background:rgba(10,10,12,.92);flex-shrink:0}
 .header-left{display:flex;flex-direction:column;gap:3px}
-.map-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.06em}
+.map-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.05em}
 .map-meta{font-size:11px;color:var(--text3)}
-.print-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:opacity .15s}
-.print-btn:hover{opacity:.85}
-.canvas-area{flex:1;position:relative;overflow:hidden;min-height:600px}
-.mm-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.mm-node{position:absolute;border-radius:10px;padding:9px 16px;font-size:13px;transform:translate(-50%,-50%);text-align:center;word-break:break-word;max-width:180px;line-height:1.4;border:1.5px solid}
-.loading{text-align:center;padding:80px 20px;color:var(--text3);font-size:14px}
-.error{text-align:center;padding:80px 20px;color:#f55656;font-size:14px}
+.print-btn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 20px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.print-btn:hover{opacity:.88}
+.canvas-area{flex:1;overflow:auto;padding:60px;
+  background-image:radial-gradient(circle, rgba(255,255,255,.04) 1px, transparent 1px);background-size:26px 26px}
+.canvas-area::-webkit-scrollbar{width:7px;height:7px}
+.canvas-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px}
+.loading,.error{text-align:center;padding:80px 20px;color:var(--text3);font-size:14px}
+.error{color:#f55656}
+
+/* tree (flexbox) — identical look to the editor */
+.branch{display:flex;align-items:center}
+.h-line{width:30px;height:1.5px;background:var(--border2);flex-shrink:0}
+.children{display:flex;flex-direction:column;gap:14px;padding:10px 0;border-left:1.5px solid var(--border2)}
+.child-entry{display:flex;align-items:center;padding-left:30px;position:relative}
+.child-entry::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:30px;height:1.5px;background:var(--border2)}
+.node{
+  padding:10px 18px;border-radius:12px;border:1.5px solid var(--border2);
+  background:var(--bg3);color:var(--text);
+  font-size:13px;line-height:1.4;font-weight:500;text-align:center;word-break:break-word;max-width:200px;
+  box-shadow:0 3px 12px rgba(0,0,0,.3)}
+.node.root{background:linear-gradient(135deg,#7f6ef5,#6553d6);border-color:transparent;color:#fff;font-weight:600;font-size:14.5px;box-shadow:0 4px 18px rgba(127,110,245,.4)}
+
 @media print{
-  .header .print-btn{display:none}
+  .print-btn{display:none}
   body{background:#fff;color:#111}
-  .header{border-bottom:1px solid #eee}
+  .header{border-bottom:1px solid #eee;background:#fff}
   .map-title,.map-meta{color:#111}
-  .canvas-area{min-height:80vh}
-  .mm-node{border-color:rgba(0,0,0,.25)!important}
+  .canvas-area{background:#fff}
+  .node{background:#f3f3f7;color:#111;border-color:rgba(0,0,0,.18);box-shadow:none}
+  .node.root{background:#7f6ef5;color:#fff}
+  .h-line,.children,.child-entry::before{background:rgba(0,0,0,.18);border-color:rgba(0,0,0,.18)}
 }
 </style>
 </head>
@@ -39,106 +61,85 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
   <button class="print-btn" onclick="window.print()">Печать</button>
 </div>
 <div class="canvas-area" id="canvas-area">
-  <svg class="mm-svg" id="mm-svg"></svg>
   <div id="canvas-status" class="loading">Загрузка минд мапа…</div>
 </div>
 
 <script>
-var COLORS=['#7f6ef5','#4A9EFF','#FF8C42','#50C878'];
+const COLORS = ['#7f6ef5','#4A9EFF','#FF8C42','#50C878'];
+let NODES = [];
 
-function qs(name){
-  var params=new URLSearchParams(window.location.search);
-  return params.get(name)||'';
-}
+function qs(name){ return new URLSearchParams(window.location.search).get(name) || ''; }
 
-function getDepth(nodes,nodeId){
-  var d=0,n=nodes.find(function(x){return x.id===nodeId;});
-  while(n&&n.parentId){d++;var pid=n.parentId;n=nodes.find(function(x){return x.id===pid;});}
+function depthOf(nodeId){
+  let d = 0, n = NODES.find(x => x.id === nodeId);
+  while (n && n.parentId) { d++; const pid = n.parentId; n = NODES.find(x => x.id === pid); }
   return d;
 }
 
+function buildBranch(nodeId){
+  const n = NODES.find(x => x.id === nodeId);
+  if (!n) return null;
+  const kids = NODES.filter(x => x.parentId === nodeId);
+
+  const branch = document.createElement('div');
+  branch.className = 'branch';
+
+  const box = document.createElement('div');
+  const isRoot = !n.parentId;
+  box.className = 'node' + (isRoot ? ' root' : '');
+  box.textContent = n.text;
+  if (!isRoot) {
+    const color = COLORS[Math.min(depthOf(nodeId), COLORS.length - 1)];
+    box.style.borderColor = color;
+    box.style.color = color;
+  }
+  branch.appendChild(box);
+
+  if (kids.length){
+    const hline = document.createElement('div');
+    hline.className = 'h-line';
+    branch.appendChild(hline);
+    const col = document.createElement('div');
+    col.className = 'children';
+    kids.forEach(k => {
+      const entry = document.createElement('div');
+      entry.className = 'child-entry';
+      entry.appendChild(buildBranch(k.id));
+      col.appendChild(entry);
+    });
+    branch.appendChild(col);
+  }
+  return branch;
+}
+
 function renderMap(map){
-  document.title=map.name+' — Минд мап';
-  document.getElementById('map-title').textContent=map.name;
-  document.getElementById('map-meta').textContent='Создан: '+new Date(map.created||Date.now()).toLocaleDateString('ru',{day:'2-digit',month:'long',year:'numeric'});
-  document.getElementById('canvas-status').style.display='none';
+  document.title = (map.name || 'Минд мап') + ' — Минд мап';
+  document.getElementById('map-title').textContent = map.name || 'Минд мап';
+  document.getElementById('map-meta').textContent = 'Создан: ' +
+    new Date(map.created || Date.now()).toLocaleDateString('ru',{day:'2-digit',month:'long',year:'numeric'});
 
-  var area=document.getElementById('canvas-area');
-  var svg=document.getElementById('mm-svg');
-  var nodes=map.nodes||[];
-  if(!nodes.length)return;
-
-  // Compute bounding box to center
-  var minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
-  nodes.forEach(function(n){
-    minX=Math.min(minX,n.x);maxX=Math.max(maxX,n.x);
-    minY=Math.min(minY,n.y);maxY=Math.max(maxY,n.y);
-  });
-  var cw=area.clientWidth,ch=area.clientHeight;
-  var cx=cw/2-(minX+maxX)/2;
-  var cy=ch/2-(minY+maxY)/2;
-
-  function sx(nx){return nx+cx;}
-  function sy(ny){return ny+cy;}
-
-  // Draw lines first
-  nodes.forEach(function(n){
-    if(!n.parentId)return;
-    var p=nodes.find(function(x){return x.id===n.parentId;});
-    if(!p)return;
-    var d=getDepth(nodes,n.id);
-    var color=COLORS[Math.min(d-1,COLORS.length-1)];
-    var x1=sx(p.x),y1=sy(p.y),x2=sx(n.x),y2=sy(n.y),mx=(x1+x2)/2;
-    var path=document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.setAttribute('d','M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2);
-    path.setAttribute('fill','none');
-    path.setAttribute('stroke',color);
-    path.setAttribute('stroke-width','2');
-    path.setAttribute('opacity','0.65');
-    svg.appendChild(path);
-  });
-
-  // Draw nodes
-  nodes.forEach(function(n){
-    var d=getDepth(nodes,n.id);
-    var color=COLORS[Math.min(Math.max(d-1,0),COLORS.length-1)];
-    var el=document.createElement('div');
-    el.className='mm-node';
-    el.textContent=n.text;
-    el.style.left=sx(n.x)+'px';
-    el.style.top=sy(n.y)+'px';
-    if(d===0){
-      el.style.background='#7f6ef5';el.style.color='#fff';
-      el.style.borderColor='#7f6ef5';el.style.fontWeight='600';
-    } else {
-      el.style.background='#1a1a24';el.style.color=color;el.style.borderColor=color;
-    }
-    area.appendChild(el);
-  });
+  const area = document.getElementById('canvas-area');
+  area.innerHTML = '';
+  NODES = Array.isArray(map.nodes) ? map.nodes : [];
+  if (!NODES.length){ area.innerHTML = '<div class="loading">Пустая карта</div>'; return; }
+  let root = NODES.find(n => !n.parentId);
+  if (!root) { NODES[0].parentId = null; root = NODES[0]; }
+  area.appendChild(buildBranch(root.id));
 }
 
 function showError(msg){
-  var s=document.getElementById('canvas-status');
-  s.className='error';
-  s.textContent=msg;
+  const a = document.getElementById('canvas-area');
+  a.innerHTML = '<div class="error">' + msg + '</div>';
 }
 
-var id=qs('id'),bid=qs('bid');
-if(!id||!bid){
+var id = qs('id'), bid = qs('bid');
+if (!id || !bid){
   showError('Неверная ссылка — отсутствуют параметры id или bid.');
 } else {
-  fetch('/api/save?key=mindmap_'+encodeURIComponent(id)+'&bid='+encodeURIComponent(bid))
-    .then(function(r){
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      return r.json();
-    })
-    .then(function(data){
-      var map=data.data||data;
-      renderMap(map);
-    })
-    .catch(function(err){
-      showError('Не удалось загрузить минд мап: '+err.message);
-    });
+  fetch('/api/save?key=mindmap_' + encodeURIComponent(id) + '&bid=' + encodeURIComponent(bid))
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data){ renderMap(data.data || data); })
+    .catch(function(err){ showError('Не удалось загрузить минд мап: ' + err.message); });
 }
 </script>
 </body>
