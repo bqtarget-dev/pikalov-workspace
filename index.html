@@ -1705,9 +1705,21 @@ function getMemberColor(slug) {
   return cm ? '#50C878' : '#888';
 }
 
-function getAllMembers()    { return MEMBERS.concat(teamState.customMembers || []); }
-function getBoardMembers() { return MEMBERS.filter(function(m){ return !m.owner; }).concat(teamState.customMembers || []); }
-function getMemberObj(slug) { return getAllMembers().find(function(m){ return m.slug===slug; }); }
+function applyOverride(m) {
+  var o = teamState.overrides && teamState.overrides[m.slug];
+  if (!o) return m;
+  var r = {slug:m.slug, name:m.name, role:m.role};
+  if (m.owner)  r.owner  = true;
+  if (m.custom) r.custom = true;
+  if (o.name != null && o.name !== '') r.name = o.name;
+  if (o.role != null && o.role !== '') r.role = o.role;
+  return r;
+}
+// Full roster incl. hidden, overrides applied — for name lookups in old tasks
+function getRawMembers()   { return MEMBERS.concat(teamState.customMembers || []).map(applyOverride); }
+function getAllMembers()   { var h=teamState.hidden||[]; return getRawMembers().filter(function(m){ return h.indexOf(m.slug)===-1; }); }
+function getBoardMembers() { return getAllMembers().filter(function(m){ return !m.owner; }); }
+function getMemberObj(slug) { return getRawMembers().find(function(m){ return m.slug===slug; }); }
 function getMemberName(slug){ var m=getMemberObj(slug); return m?m.name:(slug||'—'); }
 
 function loadTeamData() {
@@ -1716,6 +1728,8 @@ function loadTeamData() {
   if (!teamState.tasks)         teamState.tasks         = [];
   if (!teamState.customMembers) teamState.customMembers = [];
   if (!teamState.ideaBank)      teamState.ideaBank      = [];
+  if (!teamState.overrides)     teamState.overrides     = {};
+  if (!teamState.hidden)        teamState.hidden        = [];
   getAllMembers().forEach(function(m){
     if (!teamState.statuses[m.slug])
       teamState.statuses[m.slug] = {status:'online', updatedAt:new Date().toISOString()};
@@ -1753,6 +1767,38 @@ function addCustomMember() {
 function removeCustomMember(slug) {
   if (!confirm('Удалить участника?')) return;
   teamState.customMembers = teamState.customMembers.filter(function(m){ return m.slug!==slug; });
+  saveTeamData(); renderTeam();
+}
+
+function editMember(slug) {
+  var m = getMemberObj(slug);
+  if (!m) return;
+  var name = prompt('Имя участника:', m.name);
+  if (name === null) return;
+  name = name.trim();
+  if (!name) return;
+  var role = prompt('Роль:', m.role);
+  if (role === null) return;
+  role = role.trim() || m.role;
+  var custom = teamState.customMembers.find(function(x){ return x.slug===slug; });
+  if (custom) {
+    custom.name = name; custom.role = role;
+  } else {
+    teamState.overrides[slug] = {name:name, role:role};
+  }
+  saveTeamData(); renderTeam();
+}
+
+function removeMember(slug) {
+  var m = getMemberObj(slug);
+  if (m && m.owner) { alert('Владельца удалить нельзя'); return; }
+  if (!confirm('Удалить участника?')) return;
+  var isCustom = teamState.customMembers.some(function(x){ return x.slug===slug; });
+  if (isCustom) {
+    teamState.customMembers = teamState.customMembers.filter(function(x){ return x.slug!==slug; });
+  } else if (teamState.hidden.indexOf(slug) === -1) {
+    teamState.hidden.push(slug);
+  }
   saveTeamData(); renderTeam();
 }
 
@@ -1803,13 +1849,14 @@ function _renderTeam() {
         (extra > 0 ? '<button class="mc2-more-btn" onclick="quickShowMore(\'' + m.slug + '\')">ещё ' + extra + '</button>' : '')
       : '<div class="mc2-empty">Нет задач</div>';
 
-    var delBtn = m.custom
-      ? '<button class="mc2-del" onclick="removeCustomMember(\'' + m.slug + '\')" title="Удалить">✕</button>'
-      : '';
+    var editBtn = '<button class="mc2-del" onclick="editMember(\'' + m.slug + '\')" title="Редактировать">✎</button>';
+    var delBtn = m.owner
+      ? ''
+      : '<button class="mc2-del" onclick="removeMember(\'' + m.slug + '\')" title="Удалить">✕</button>';
 
     return '<div class="member-card2">' +
       '<div class="mc2-header">' +
-        '<div class="mc2-info">' + delBtn +
+        '<div class="mc2-info">' + editBtn + delBtn +
           '<span class="mc2-name">' + esc(m.name) + '</span>' +
           '<span class="mc2-role">' + esc(m.role) + '</span>' +
         '</div>' +
@@ -3248,9 +3295,14 @@ function vkcRender() {}
     mmLoad();
     var map=mm.state.maps.find(function(x){return x.id===id;});
     if(!map)return;
-    var bid=uid()+uid(),key='mindmap_'+map.id;
-    fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:key,bid:bid,data:map})})
-      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);prompt('Ссылка для клиента (скопируй):',window.location.origin+'/mindmap.html?id='+map.id+'&bid='+bid);})
+    var savedBid=localStorage.getItem('jsonbin_save_id')||undefined;
+    fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'mindmap_'+map.id,data:map,bid:savedBid})})
+      .then(function(r){return r.json();})
+      .then(function(json){
+        if(!json.ok)throw new Error(JSON.stringify(json));
+        if(json.bin_id)localStorage.setItem('jsonbin_save_id',json.bin_id);
+        prompt('Ссылка для клиента (скопируй):',window.location.origin+'/mindmap.html?id='+map.id+'&bid='+json.bin_id);
+      })
       .catch(function(err){alert('Ошибка при сохранении: '+err.message);});
   };
 })();
