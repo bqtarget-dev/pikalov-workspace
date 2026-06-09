@@ -3351,15 +3351,18 @@ function vkcRender() {}
   function post(b)     { return fetch('/api/save?ws=1', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b) }).then(j); }
   function j(r)        { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }
 
-  // ── debounced per-key upload ──
+  // ── eager per-key upload ──
+  var lastPushAt = 0;
   function schedulePush() {
     if (!configured) return;
     if (pushTimer) clearTimeout(pushTimer);
-    pushTimer = setTimeout(doPush, 1200);
+    var wait = (Date.now() - lastPushAt > 2000) ? 250 : 900;   // push quickly if idle, coalesce bursts
+    pushTimer = setTimeout(doPush, wait);
   }
   function doPush() {
     pushTimer = null;
     if (!configured || !Object.keys(dirty).length) return;
+    lastPushAt = Date.now();
     var p = buildPatch();
     dirty = {};
     post({ patch: p }).then(function () { setV(p.__v); })
@@ -3385,27 +3388,12 @@ function vkcRender() {}
   window.addEventListener('pagehide', flush);
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
 
-  // Mindmaps are merged by id (union) so a pull never deletes maps made on another device.
-  function mergeMindmaps(localStr, remoteStr) {
-    try {
-      var L = JSON.parse(localStr || '{"maps":[]}'), R = JSON.parse(remoteStr || '{"maps":[]}');
-      var byId = {};
-      (R.maps || []).forEach(function (m) { byId[m.id] = m; });
-      (L.maps || []).forEach(function (m) { if (!byId[m.id]) byId[m.id] = m; });
-      return JSON.stringify({ maps: Object.keys(byId).map(function (k) { return byId[k]; }) });
-    } catch (e) { return remoteStr; }
-  }
-
   function applyRemote(data) {
     if (!localStorage.getItem('ws_backup_done')) {          // one-time safety backup of this browser's local data
       SHARED_KEYS.forEach(function (k) { var s = localStorage.getItem(k); if (s != null) rawSet(k + '_local_backup', s); });
       rawSet('ws_backup_done', '1');
     }
-    SHARED_KEYS.forEach(function (k) {
-      if (data[k] == null) return;
-      if (k === 'pm_mindmap_v1') rawSet(k, mergeMindmaps(localStorage.getItem(k), data[k]));
-      else rawSet(k, data[k]);
-    });
+    SHARED_KEYS.forEach(function (k) { if (data[k] != null) rawSet(k, data[k]); });
     setV(data.__v || Date.now());
   }
 

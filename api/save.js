@@ -57,6 +57,12 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // sendBeacon (used on mobile when a tab is hidden/closed) may deliver the body
+  // as a raw string — parse it so { patch } / { data } are understood.
+  if (typeof req.body === 'string') {
+    try { req.body = JSON.parse(req.body); } catch (e) {}
+  }
+
   if (!MASTER_KEY) {
     console.error('[handler] JSONBIN_MASTER_KEY not set');
     return res.status(503).json({ error: 'JSONBIN_MASTER_KEY not set in Vercel env vars' });
