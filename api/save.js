@@ -29,13 +29,13 @@ async function writeBin(binId, value) {
 }
 
 // Creates a new bin with initialData already written — saves one round-trip vs create({}) + write.
-async function createBin(initialData) {
+async function createBin(initialData, name) {
   const res = await fetch(`${JSONBIN}/b`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-Master-Key': MASTER_KEY,
-      'X-Bin-Name': 'pikalov-workspace-mediaplans',
+      'X-Bin-Name': name || 'pikalov-workspace-mediaplans',
       'X-Bin-Private': 'true'
     },
     body: JSON.stringify(initialData || {})
@@ -60,6 +60,50 @@ export default async function handler(req, res) {
   if (!MASTER_KEY) {
     console.error('[handler] JSONBIN_MASTER_KEY not set');
     return res.status(503).json({ error: 'JSONBIN_MASTER_KEY not set in Vercel env vars' });
+  }
+
+  // ── Shared workspace DB (whole-state sync) ───────────────────────────
+  // GET  /api/save?ws=1                  → { ok, data } | { ok, needsSetup:true }
+  // POST /api/save?ws=1  { data }        → write full workspace
+  // POST /api/save?ws=1  { init, data }  → create the shared bin, returns bin_id
+  const WORKSPACE_BIN_ID = process.env.WORKSPACE_BIN_ID;
+  const isWs = req.query.ws || (req.body && req.body.ws) || (req.body && req.body.init);
+  if (isWs) {
+    if (req.method === 'GET') {
+      if (!WORKSPACE_BIN_ID) return res.status(200).json({ ok: true, needsSetup: true });
+      try {
+        const rec = await readBin(WORKSPACE_BIN_ID);
+        return res.status(200).json({ ok: true, data: rec });
+      } catch (e) {
+        console.error('[ws GET] failed:', e.message);
+        return res.status(500).json({ error: e.message });
+      }
+    }
+    if (req.method === 'POST') {
+      const body = req.body || {};
+      // Create the shared bin (one-time setup). Owner clicks "create shared base".
+      if (body.init) {
+        try {
+          const id = await createBin(body.data || {}, 'pikalov-workspace-shared-db');
+          console.log('[ws init] created shared bin', id);
+          return res.status(200).json({ ok: true, bin_id: id });
+        } catch (e) {
+          console.error('[ws init] failed:', e.message);
+          return res.status(500).json({ error: e.message });
+        }
+      }
+      // Normal save of the whole workspace.
+      if (!WORKSPACE_BIN_ID) return res.status(409).json({ error: 'workspace_not_configured' });
+      if (body.data === undefined) return res.status(400).json({ error: 'data required' });
+      try {
+        await writeBin(WORKSPACE_BIN_ID, body.data);
+        return res.status(200).json({ ok: true });
+      } catch (e) {
+        console.error('[ws POST] failed:', e.message);
+        return res.status(500).json({ error: e.message });
+      }
+    }
+    return res.status(405).json({ error: 'method_not_allowed' });
   }
 
   // ── GET /api/save?key=project_XXX&bid=YYY ────────────────────────────

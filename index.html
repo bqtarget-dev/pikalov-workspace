@@ -289,9 +289,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .mc2-add-card:hover{border-color:var(--accent)}
 .mc2-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .mc2-info{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0;overflow:hidden}
+.mc2-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .mc2-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .mc2-role{font-size:10px;color:var(--text3);white-space:nowrap}
-.mc2-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .mc2-status-btn{font-size:11px;padding:4px 10px;border-radius:14px;border:none;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;flex-shrink:0;transition:opacity .15s}
 .mc2-status-btn:hover{opacity:.8}
 .mc2-online{background:rgba(62,207,142,.15);color:var(--green)}
@@ -309,6 +309,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .mc2-add:hover{background:rgba(127,110,245,.1)}
 .mc2-del{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10px;padding:0 3px;flex-shrink:0;transition:color .15s;line-height:1}
 .mc2-del:hover{color:var(--red)}
+.mc2-edit{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:0 3px;flex-shrink:0;transition:color .15s;line-height:1}
+.mc2-edit:hover{color:var(--accent2)}
 
 /* ── Monthly calendar (Google Calendar style) ─────────────────────── */
 .gcal-wrap{background:var(--bg2);border:.5px solid var(--border);border-radius:12px;overflow:hidden}
@@ -1706,21 +1708,20 @@ function getMemberColor(slug) {
   return cm ? '#50C878' : '#888';
 }
 
-function applyOverride(m) {
-  var o = teamState.overrides && teamState.overrides[m.slug];
-  if (!o) return m;
-  var r = {slug:m.slug, name:m.name, role:m.role};
-  if (m.owner)  r.owner  = true;
-  if (m.custom) r.custom = true;
-  if (o.name != null && o.name !== '') r.name = o.name;
-  if (o.role != null && o.role !== '') r.role = o.role;
-  return r;
+// Full list (built-ins + custom), with name/role overrides applied, INCLUDING hidden ones.
+// Used for name/color resolution so historical tasks still show a name after a member is removed.
+function _allMembersRaw() {
+  var all = MEMBERS.concat(teamState.customMembers || []);
+  var ov  = teamState.overrides || {};
+  return all.map(function(m){
+    var o = ov[m.slug];
+    return o ? Object.assign({}, m, {name:o.name||m.name, role:o.role||m.role}) : m;
+  });
 }
-// Full roster incl. hidden, overrides applied — for name lookups in old tasks
-function getRawMembers()   { return MEMBERS.concat(teamState.customMembers || []).map(applyOverride); }
-function getAllMembers()   { var h=teamState.hidden||[]; return getRawMembers().filter(function(m){ return h.indexOf(m.slug)===-1; }); }
-function getBoardMembers() { return getAllMembers().filter(function(m){ return !m.owner; }); }
-function getMemberObj(slug) { return getRawMembers().find(function(m){ return m.slug===slug; }); }
+// Active members only (overrides applied, hidden filtered out). Used for cards & assignable dropdowns.
+function getAllMembers()    { var h=teamState.hidden||[]; return _allMembersRaw().filter(function(m){ return h.indexOf(m.slug)===-1; }); }
+function getBoardMembers()  { return getAllMembers().filter(function(m){ return !m.owner; }); }
+function getMemberObj(slug) { return _allMembersRaw().find(function(m){ return m.slug===slug; }); }
 function getMemberName(slug){ var m=getMemberObj(slug); return m?m.name:(slug||'—'); }
 
 function loadTeamData() {
@@ -1771,35 +1772,32 @@ function removeCustomMember(slug) {
   saveTeamData(); renderTeam();
 }
 
+// Edit ANY member (built-in or custom): rename + change role.
 function editMember(slug) {
   var m = getMemberObj(slug);
   if (!m) return;
   var name = prompt('Имя участника:', m.name);
-  if (name === null) return;
+  if (name === null) return;              // cancel
   name = name.trim();
   if (!name) return;
   var role = prompt('Роль:', m.role);
-  if (role === null) return;
-  role = role.trim() || m.role;
-  var custom = teamState.customMembers.find(function(x){ return x.slug===slug; });
-  if (custom) {
-    custom.name = name; custom.role = role;
-  } else {
-    teamState.overrides[slug] = {name:name, role:role};
-  }
+  if (role === null) role = m.role;
+  role = (role || '').trim() || m.role;
+  var custom = (teamState.customMembers || []).find(function(x){ return x.slug===slug; });
+  if (custom) { custom.name = name; custom.role = role; }
+  else { teamState.overrides = teamState.overrides || {}; teamState.overrides[slug] = {name:name, role:role}; }
   saveTeamData(); renderTeam();
 }
 
+// Remove ANY member (custom → deleted; built-in → hidden). Owner can't be removed.
 function removeMember(slug) {
   var m = getMemberObj(slug);
-  if (m && m.owner) { alert('Владельца удалить нельзя'); return; }
-  if (!confirm('Удалить участника?')) return;
-  var isCustom = teamState.customMembers.some(function(x){ return x.slug===slug; });
-  if (isCustom) {
-    teamState.customMembers = teamState.customMembers.filter(function(x){ return x.slug!==slug; });
-  } else if (teamState.hidden.indexOf(slug) === -1) {
-    teamState.hidden.push(slug);
-  }
+  if (!m) return;
+  if (m.owner) { alert('Владельца удалить нельзя.'); return; }
+  if (!confirm('Удалить участника «' + m.name + '»?')) return;
+  var custom = (teamState.customMembers || []).find(function(x){ return x.slug===slug; });
+  if (custom) { teamState.customMembers = teamState.customMembers.filter(function(x){ return x.slug!==slug; }); }
+  else { teamState.hidden = teamState.hidden || []; if (teamState.hidden.indexOf(slug)===-1) teamState.hidden.push(slug); }
   saveTeamData(); renderTeam();
 }
 
@@ -1850,8 +1848,8 @@ function _renderTeam() {
         (extra > 0 ? '<button class="mc2-more-btn" onclick="quickShowMore(\'' + m.slug + '\')">ещё ' + extra + '</button>' : '')
       : '<div class="mc2-empty">Нет задач</div>';
 
-    var editBtn = '<button class="mc2-del" onclick="editMember(\'' + m.slug + '\')" title="Редактировать">✎</button>';
-    var delBtn = m.owner
+    var editBtn = '<button class="mc2-edit" onclick="editMember(\'' + m.slug + '\')" title="Изменить имя/роль">✎</button>';
+    var delBtn  = m.owner
       ? ''
       : '<button class="mc2-del" onclick="removeMember(\'' + m.slug + '\')" title="Удалить">✕</button>';
 
@@ -1863,7 +1861,7 @@ function _renderTeam() {
         '</div>' +
         '<div class="mc2-actions">' + editBtn + delBtn +
           '<button class="mc2-status-btn ' + (online ? 'mc2-online' : 'mc2-away') + '" onclick="toggleMemberStatus(\'' + m.slug + '\')">' +
-            (online ? '🟢 На месте' : '🔴 Отошёл') + '</button>' +
+          (online ? '🟢 На месте' : '🔴 Отошёл') + '</button>' +
         '</div>' +
       '</div>' +
       '<div class="mc2-tasks" id="mc2-tasks-' + m.slug + '">' + taskRows + '</div>' +
@@ -3298,16 +3296,160 @@ function vkcRender() {}
     mmLoad();
     var map=mm.state.maps.find(function(x){return x.id===id;});
     if(!map)return;
+    // Reuse the same shared bin the media plans use. First save creates the bin
+    // (server returns bin_id); later saves reuse it. The fake-bid bug is gone.
     var savedBid=localStorage.getItem('jsonbin_save_id')||undefined;
-    fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'mindmap_'+map.id,data:map,bid:savedBid})})
-      .then(function(r){return r.json();})
+    fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({key:'mindmap_'+map.id,data:map,bid:savedBid})})
+      .then(function(r){
+        if(!r.ok)throw new Error('HTTP '+r.status);
+        return r.json();
+      })
       .then(function(json){
-        if(!json.ok)throw new Error(JSON.stringify(json));
+        var binId=json.bin_id||savedBid;
+        if(!binId)throw new Error('сервер не вернул bin_id');
         if(json.bin_id)localStorage.setItem('jsonbin_save_id',json.bin_id);
-        prompt('Ссылка для клиента (скопируй):',window.location.origin+'/mindmap.html?id='+map.id+'&bid='+json.bin_id);
+        var link=window.location.origin+'/mindmap.html?id='+encodeURIComponent(map.id)+'&bid='+encodeURIComponent(binId);
+        prompt('Ссылка для клиента (скопируй):',link);
       })
       .catch(function(err){alert('Ошибка при сохранении: '+err.message);});
   };
+})();
+</script>
+<script>
+/* ──────────────────────────────────────────────────────────────────────
+   CloudSync — shared team database on top of localStorage.
+   Safe by design: if the workspace bin isn't configured (or the network is
+   down), the app keeps working purely on localStorage, exactly as before.
+   ────────────────────────────────────────────────────────────────────── */
+(function CloudSync() {
+  'use strict';
+  var SHARED_KEYS = ['pm_ws_v1', 'pm_team_v1', 'pm_crm_v1', 'pm_storage_v1', 'pm_mindmap_v1'];
+  var VKEY = 'ws_last_v';
+  var configured = false;
+  var pushTimer = null;
+
+  var rawSet = localStorage.setItem.bind(localStorage);          // write without re-triggering a push
+  function curV()  { return parseInt(localStorage.getItem(VKEY) || '0', 10) || 0; }
+  function setV(v) { rawSet(VKEY, String(v)); }
+
+  function gather() {
+    var o = { __v: Date.now() };
+    SHARED_KEYS.forEach(function (k) { var s = localStorage.getItem(k); if (s != null) o[k] = s; });
+    return o;
+  }
+
+  function cloudGet()  { return fetch('/api/save?ws=1').then(j); }
+  function cloudPush(o){ return post({ data: o }); }
+  function cloudInit(o){ return post({ init: true, data: o }); }
+  function post(b)     { return fetch('/api/save?ws=1', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b) }).then(j); }
+  function j(r)        { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }
+
+  // ── debounced upload of the whole workspace ──
+  function schedulePush() {
+    if (!configured) return;
+    if (pushTimer) clearTimeout(pushTimer);
+    pushTimer = setTimeout(function () {
+      pushTimer = null;
+      try {
+        var o = gather();
+        cloudPush(o).then(function () { setV(o.__v); }).catch(function () {});
+      } catch (e) {}
+    }, 1500);
+  }
+
+  // Intercept saves of shared keys → schedule an upload. Never breaks local saves.
+  localStorage.setItem = function (k, v) {
+    rawSet(k, v);
+    try { if (SHARED_KEYS.indexOf(k) !== -1) schedulePush(); } catch (e) {}
+  };
+
+  function applyRemote(data) {
+    if (!localStorage.getItem('ws_backup_done')) {          // one-time safety backup of this browser's local data
+      SHARED_KEYS.forEach(function (k) { var s = localStorage.getItem(k); if (s != null) rawSet(k + '_local_backup', s); });
+      rawSet('ws_backup_done', '1');
+    }
+    SHARED_KEYS.forEach(function (k) { if (data[k] != null) rawSet(k, data[k]); });
+    setV(data.__v || Date.now());
+  }
+
+  // ── minimal UI ──
+  function bar(bg) {
+    var d = document.createElement('div');
+    d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:11px 16px;display:flex;align-items:center;justify-content:center;gap:12px;font:13px/1.3 system-ui,sans-serif;color:#fff;background:' + bg + ';box-shadow:0 -2px 14px rgba(0,0,0,.35)';
+    document.body.appendChild(d);
+    return d;
+  }
+  function btn(label, bg) {
+    return '<button style="background:' + bg + ';color:#fff;border:none;border-radius:7px;padding:7px 15px;font:13px system-ui;font-weight:600;cursor:pointer">' + label + '</button>';
+  }
+
+  function showSetup() {
+    var d = bar('#1f1f29');
+    d.innerHTML = '<span>Общая база для команды ещё не создана.</span>' +
+      btn('Создать общую базу', '#7f6ef5') +
+      '<span style="opacity:.5;font-size:11px">создаёт владелец, с данными этого браузера</span>';
+    d.querySelector('button').onclick = function () {
+      d.querySelector('button').disabled = true;
+      d.querySelector('button').textContent = 'Создаю…';
+      try {
+        var o = gather();
+        cloudInit(o).then(function (resp) {
+          setV(o.__v);
+          rawSet('ws_seeded', '1');
+          d.innerHTML = '<div style="max-width:760px;text-align:left">' +
+            '<b>База создана.</b> Осталось 2 шага (один раз):<br>' +
+            '1) В Vercel → проект → Settings → Environment Variables добавь переменную <b>WORKSPACE_BIN_ID</b> со значением:<br>' +
+            '<code style="display:inline-block;margin:6px 0;padding:6px 10px;background:#000;border-radius:6px;user-select:all;font-size:13px">' + (resp.bin_id || '?') + '</code><br>' +
+            '2) Сделай Redeploy. После этого общая база заработает у всех.</div>';
+        }).catch(function (e) {
+          d.querySelector('button').disabled = false;
+          d.querySelector('button').textContent = 'Создать общую базу';
+          alert('Не удалось создать базу: ' + e.message);
+        });
+      } catch (e) { alert('Ошибка: ' + e.message); }
+    };
+  }
+
+  function showRefresh() {
+    if (document.getElementById('ws-refresh-bar')) return;
+    var d = bar('#7f6ef5');
+    d.id = 'ws-refresh-bar';
+    d.innerHTML = '<span>🔄 Коллега обновил данные.</span>' + btn('Загрузить', '#5a48c8') +
+      btn('Позже', 'rgba(255,255,255,.2)');
+    var bs = d.querySelectorAll('button');
+    bs[0].onclick = function () { location.reload(); };
+    bs[1].onclick = function () { d.remove(); };
+  }
+
+  function startPolling() {
+    setInterval(function () {
+      if (!configured) return;
+      if (document.querySelector('.overlay.open, .overlay.active, .overlay.show')) return;   // don't nag mid-edit
+      cloudGet().then(function (resp) {
+        if (resp && resp.data && resp.data.__v && resp.data.__v > curV()) showRefresh();
+      }).catch(function () {});
+    }, 30000);
+  }
+
+  // ── boot ──
+  cloudGet().then(function (resp) {
+    if (resp && resp.needsSetup) { showSetup(); return; }
+    configured = true;
+    var data = resp && resp.data ? resp.data : null;
+    var remoteV = (data && data.__v) ? data.__v : 0;
+    if (data && remoteV > curV()) {
+      applyRemote(data);
+      if (sessionStorage.getItem('ws_synced') !== '1') {
+        sessionStorage.setItem('ws_synced', '1');
+        location.reload();
+        return;
+      }
+    } else if (curV() > remoteV) {
+      schedulePush();                       // local is newer → upload it
+    }
+    startPolling();
+  }).catch(function () { /* offline → keep working locally */ });
 })();
 </script>
 </body>
