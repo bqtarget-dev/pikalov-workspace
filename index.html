@@ -3333,43 +3333,79 @@ function vkcRender() {}
   function curV()  { return parseInt(localStorage.getItem(VKEY) || '0', 10) || 0; }
   function setV(v) { rawSet(VKEY, String(v)); }
 
-  function gather() {
+  function gather() {                                             // whole state — used only to seed the bin
     var o = { __v: Date.now() };
     SHARED_KEYS.forEach(function (k) { var s = localStorage.getItem(k); if (s != null) o[k] = s; });
     return o;
   }
 
+  var dirty = {};                                                // shared keys changed since last upload
+  function buildPatch() {
+    var p = { __v: Date.now() };
+    Object.keys(dirty).forEach(function (k) { var s = localStorage.getItem(k); if (s != null) p[k] = s; });
+    return p;
+  }
+
   function cloudGet()  { return fetch('/api/save?ws=1').then(j); }
-  function cloudPush(o){ return post({ data: o }); }
   function cloudInit(o){ return post({ init: true, data: o }); }
   function post(b)     { return fetch('/api/save?ws=1', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b) }).then(j); }
   function j(r)        { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }
 
-  // ── debounced upload of the whole workspace ──
+  // ── debounced per-key upload ──
   function schedulePush() {
     if (!configured) return;
     if (pushTimer) clearTimeout(pushTimer);
-    pushTimer = setTimeout(function () {
-      pushTimer = null;
-      try {
-        var o = gather();
-        cloudPush(o).then(function () { setV(o.__v); }).catch(function () {});
-      } catch (e) {}
-    }, 1500);
+    pushTimer = setTimeout(doPush, 1200);
+  }
+  function doPush() {
+    pushTimer = null;
+    if (!configured || !Object.keys(dirty).length) return;
+    var p = buildPatch();
+    dirty = {};
+    post({ patch: p }).then(function () { setV(p.__v); })
+      .catch(function () { Object.keys(p).forEach(function (k) { if (k !== '__v') dirty[k] = 1; }); });
+  }
+  // Reliable flush when the tab is hidden/closed or we navigate away (works on mobile via sendBeacon).
+  function flush() {
+    if (!configured || !Object.keys(dirty).length) return;
+    var p = buildPatch();
+    dirty = {};
+    try {
+      var blob = new Blob([JSON.stringify({ patch: p })], { type: 'application/json' });
+      if (navigator.sendBeacon && navigator.sendBeacon('/api/save?ws=1', blob)) { setV(p.__v); return; }
+    } catch (e) {}
+    post({ patch: p }).then(function () { setV(p.__v); }).catch(function () {});
   }
 
-  // Intercept saves of shared keys → schedule an upload. Never breaks local saves.
+  // Intercept saves of shared keys → mark dirty + schedule upload. Never breaks local saves.
   localStorage.setItem = function (k, v) {
     rawSet(k, v);
-    try { if (SHARED_KEYS.indexOf(k) !== -1) schedulePush(); } catch (e) {}
+    try { if (SHARED_KEYS.indexOf(k) !== -1) { dirty[k] = 1; schedulePush(); } } catch (e) {}
   };
+  window.addEventListener('pagehide', flush);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
+
+  // Mindmaps are merged by id (union) so a pull never deletes maps made on another device.
+  function mergeMindmaps(localStr, remoteStr) {
+    try {
+      var L = JSON.parse(localStr || '{"maps":[]}'), R = JSON.parse(remoteStr || '{"maps":[]}');
+      var byId = {};
+      (R.maps || []).forEach(function (m) { byId[m.id] = m; });
+      (L.maps || []).forEach(function (m) { if (!byId[m.id]) byId[m.id] = m; });
+      return JSON.stringify({ maps: Object.keys(byId).map(function (k) { return byId[k]; }) });
+    } catch (e) { return remoteStr; }
+  }
 
   function applyRemote(data) {
     if (!localStorage.getItem('ws_backup_done')) {          // one-time safety backup of this browser's local data
       SHARED_KEYS.forEach(function (k) { var s = localStorage.getItem(k); if (s != null) rawSet(k + '_local_backup', s); });
       rawSet('ws_backup_done', '1');
     }
-    SHARED_KEYS.forEach(function (k) { if (data[k] != null) rawSet(k, data[k]); });
+    SHARED_KEYS.forEach(function (k) {
+      if (data[k] == null) return;
+      if (k === 'pm_mindmap_v1') rawSet(k, mergeMindmaps(localStorage.getItem(k), data[k]));
+      else rawSet(k, data[k]);
+    });
     setV(data.__v || Date.now());
   }
 
@@ -3434,8 +3470,9 @@ function vkcRender() {}
 
   // ── boot ──
   cloudGet().then(function (resp) {
-    if (resp && resp.needsSetup) { showSetup(); return; }
+    if (resp && resp.needsSetup) { rawSet('ws_on', '0'); showSetup(); return; }
     configured = true;
+    rawSet('ws_on', '1');                       // tells the mindmap editor page that sync is live
     var data = resp && resp.data ? resp.data : null;
     var remoteV = (data && data.__v) ? data.__v : 0;
     if (data && remoteV > curV()) {
@@ -3446,7 +3483,8 @@ function vkcRender() {}
         return;
       }
     } else if (curV() > remoteV) {
-      schedulePush();                       // local is newer → upload it
+      SHARED_KEYS.forEach(function (k) { if (localStorage.getItem(k) != null) dirty[k] = 1; });
+      schedulePush();                           // local is newer → upload it
     }
     startPolling();
   }).catch(function () { /* offline → keep working locally */ });

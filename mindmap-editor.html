@@ -133,7 +133,32 @@ function saveState() {
     if (m) m.nodes = cur.nodes;
   }
   try { localStorage.setItem(LSKEY, JSON.stringify(state)); } catch(e) {}
+  if (window.__mmCloudPush) window.__mmCloudPush();
 }
+
+// ── Cloud sync for the mindmap (only when the team DB is configured) ──
+(function () {
+  var t = null, pending = false;
+  function on() { return localStorage.getItem('ws_on') === '1'; }
+  function patch() { return { __v: Date.now(), pm_mindmap_v1: localStorage.getItem(LSKEY) }; }
+  function send(beacon) {
+    if (!on() || !pending) return;
+    pending = false;
+    var p = patch();
+    if (beacon) {
+      try {
+        var b = new Blob([JSON.stringify({ patch: p })], { type: 'application/json' });
+        if (navigator.sendBeacon && navigator.sendBeacon('/api/save?ws=1', b)) { localStorage.setItem('ws_last_v', String(p.__v)); return; }
+      } catch (e) {}
+    }
+    fetch('/api/save?ws=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ patch: p }) })
+      .then(function () { localStorage.setItem('ws_last_v', String(p.__v)); })
+      .catch(function () { pending = true; });
+  }
+  window.__mmCloudPush = function () { pending = true; if (t) clearTimeout(t); t = setTimeout(function () { t = null; send(false); }, 1000); };
+  window.addEventListener('pagehide', function () { send(true); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') send(true); });
+})();
 
 function showErr(msg) {
   const s = document.getElementById('errscreen');

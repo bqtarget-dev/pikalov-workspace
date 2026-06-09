@@ -94,10 +94,20 @@ export default async function handler(req, res) {
       }
       // Normal save of the whole workspace.
       if (!WORKSPACE_BIN_ID) return res.status(409).json({ error: 'workspace_not_configured' });
-      if (body.data === undefined) return res.status(400).json({ error: 'data required' });
       try {
-        await writeBin(WORKSPACE_BIN_ID, body.data);
-        return res.status(200).json({ ok: true });
+        // Per-key merge (preferred): only the changed keys are replaced, others kept.
+        if (body.patch && typeof body.patch === 'object') {
+          const store = await readBin(WORKSPACE_BIN_ID);
+          Object.assign(store, body.patch);
+          await writeBin(WORKSPACE_BIN_ID, store);
+          return res.status(200).json({ ok: true });
+        }
+        // Whole-state overwrite (legacy / fallback).
+        if (body.data !== undefined) {
+          await writeBin(WORKSPACE_BIN_ID, body.data);
+          return res.status(200).json({ ok: true });
+        }
+        return res.status(400).json({ error: 'data or patch required' });
       } catch (e) {
         console.error('[ws POST] failed:', e.message);
         return res.status(500).json({ error: e.message });
