@@ -3435,25 +3435,33 @@ function vkcRender() {}
     };
   }
 
-  function showRefresh() {
-    if (document.getElementById('ws-refresh-bar')) return;
-    var d = bar('#7f6ef5');
-    d.id = 'ws-refresh-bar';
-    d.innerHTML = '<span>🔄 Коллега обновил данные.</span>' + btn('Загрузить', '#5a48c8') +
-      btn('Позже', 'rgba(255,255,255,.2)');
-    var bs = d.querySelectorAll('button');
-    bs[0].onclick = function () { location.reload(); };
-    bs[1].onclick = function () { d.remove(); };
+  // Apply remote data and re-render the whole UI in place — no banner, no reload.
+  function applyAndRender(data) {
+    applyRemote(data);
+    try { loadData(); } catch (e) {}
+    try { loadTeamData(); } catch (e) {}
+    try { var d = JSON.parse(localStorage.getItem('pm_crm_v1')); if (d) { bgtState.tasks = d.tasks || []; bgtState.replenishments = d.reps || []; } } catch (e) {}
+    try { var raw = localStorage.getItem('pm_storage_v1'); if (raw) { var s = JSON.parse(raw); if (Array.isArray(s) && typeof stgMigrate === 'function') s = stgMigrate(s); stgState.sections = s.sections || []; stgState.items = s.items || []; } } catch (e) {}
+    try { render(); } catch (e) {}
+    try { renderTeam(); } catch (e) {}
+    try { bgtRender(); } catch (e) {}
+    try { stgRender(); } catch (e) {}
+    try { renderCalendar(); } catch (e) {}
+    try { if (window.mmRenderList) window.mmRenderList(); } catch (e) {}
   }
 
   function startPolling() {
     setInterval(function () {
       if (!configured) return;
-      if (document.querySelector('.overlay.open, .overlay.active, .overlay.show')) return;   // don't nag mid-edit
       cloudGet().then(function (resp) {
-        if (resp && resp.data && resp.data.__v && resp.data.__v > curV()) showRefresh();
+        if (!(resp && resp.data && resp.data.__v && resp.data.__v > curV())) return;
+        var ae = document.activeElement;
+        // Don't overwrite while the user is mid-edit — apply on the next poll instead.
+        if (document.querySelector('.overlay.open, .overlay.active, .overlay.show')) return;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) return;
+        applyAndRender(resp.data);
       }).catch(function () {});
-    }, 30000);
+    }, 12000);
   }
 
   // ── boot ──
@@ -3464,12 +3472,7 @@ function vkcRender() {}
     var data = resp && resp.data ? resp.data : null;
     var remoteV = (data && data.__v) ? data.__v : 0;
     if (data && remoteV > curV()) {
-      applyRemote(data);
-      if (sessionStorage.getItem('ws_synced') !== '1') {
-        sessionStorage.setItem('ws_synced', '1');
-        location.reload();
-        return;
-      }
+      applyAndRender(data);                     // pull + re-render in place (no reload)
     } else if (curV() > remoteV) {
       SHARED_KEYS.forEach(function (k) { if (localStorage.getItem(k) != null) dirty[k] = 1; });
       schedulePush();                           // local is newer → upload it
